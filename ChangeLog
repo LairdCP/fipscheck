@@ -1,0 +1,27 @@
+2008-10-24  Tomas Mraz <tmraz@redhat.com>
+
+	* configure.ac: Check for OpenSSL instead of NSS.
+	* src/Makefile.am: Link libcrypto instead of NSS.
+	* src/filehmac.c: Do not compile in the prelink call
+	by default. Replace NSS calls with OpenSSL.
+
+2008-09-09  Tomas Mraz <tmraz@redhat.com>
+
+	* src/filehmac.c: Fix test for prelink.
+	* src/fipshmac.c: Unlink the hmac file on failure.
+
+	* configure.ac: Version 1.0.2
+
+2008-09-08  Tomas Mraz <tmraz@redhat.com>
+
+	* src/Makefile.am: Variable placement of the binaries.
+	* src/library.c: Likewise.
+
+	* src/fipscheck.c: Add prefix to the hmac file names.
+	* src/fipshmac.c: Likewise.
+
+	* configure.ac: Version 1.0.1
+
+2008-08-25  Tomas Mraz <tmraz@redhat.com>
+
+	* Initial revision.

@@ -1,0 +1,15 @@
+FIPSCHECK project
+=================
+
+This package contains library (libfipscheck) and helper binaries which
+implement the integrity check of libraries and binaries as required by
+FIPS-140-2 validated modules.
+
+The integrity check is only one of many requirements needed for validation
+of a software cryptographic module.
+
+Dependencies
+============
+
+The package depends on Mozilla NSS (Network Security Services) for its
+operation.
