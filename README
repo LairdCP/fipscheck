@@ -11,5 +11,56 @@ of a software cryptographic module.
 Dependencies
 ============
 
-The package depends on Mozilla NSS (Network Security Services) for its
-operation.
+The package depends on the OpenSSL library for its operation.
+
+Commands
+========
+
+fipshmac <filename-to-be-checksummed>
+
+This command will create a checksum file in the same directory as the file
+which is being checksummed. It will prepend '.' and append '.hmac' to the
+original file name.
+
+* return values (exit codes): 0 - OK
+  2 - Missing filename
+  3 - Cannot open the checksum file
+  4 - Cannot read the file to be checksummed
+  5 - Memory allocation error
+  6,7 - Cannot write to the checksum file
+
+
+fipscheck <filename-to-be-checksummed>
+
+This command will verify a checksum stored in the file in the same directory
+as the file which is being checksummed. The checksum file must have '.'
+prepended and '.hmac' appended to the original file name.
+
+* return values (exit codes): 0 - OK
+  1 - Checksum mismatch
+  2 - Missing filename
+  3 - Cannot open the checksum file
+  4 - Cannot read the file to be checksummed
+  5 - Memory allocation error
+
+Library API
+===========
+
+int FIPSCHECK_verify(const char *libname, const char *symbolname)
+
+This will invoke fipscheck on either a shared library if both libname and
+symbolname are not NULL or on the executable binary from which the
+FIPSCHECK_verify was called. Possible causes of the failed checks are
+the shared library/executable cannot be read, the checksum is missing
+or unreadable, or the checksum is wrong. Note that prelink will break the
+checksums so it must be disabled when fipscheck is used to verify the
+integrity of fips validated libraries/executables.
+
+* return values: 0 - Failure
+  1 - OK
+
+Format of the checksum file
+===========================
+
+The file contains HMAC-SHA256 encoded in hexadecimal notation with
+lowercase letters with one EOL character appended.

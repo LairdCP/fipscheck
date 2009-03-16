@@ -1,3 +1,8 @@
+2009-02-09  Tomas Mraz <tmraz@redhat.com>
+
+	* README: Add some docs.
+	* configure.ac: Version 1.0.4
+
 2008-10-24  Tomas Mraz <tmraz@redhat.com>
 
 	* configure.ac: Check for OpenSSL instead of NSS.
