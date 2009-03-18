@@ -31,3 +31,25 @@
  * Return value: 0 - verification failed, 1 - verification succeded
  */
 int FIPSCHECK_verify(const char *libname, const char *symbolname);
+
+/*
+ * Auxiliary function - returns path pointing to the executable file which is being
+ * run. The path buffer must be large enough to hold the path, otherwise it is truncated.
+ * Return value: 0 - success -1 - failure
+ */
+int FIPSCHECK_get_binary_path(char *path, size_t pathlen);
+
+/*
+ * Auxiliary function - returns path pointing to the shared library file with a name
+ * libname and containing a symbol symbolname. The path buffer must be large enough to
+ * hold the path, otherwise it is truncated.
+ * Return value: 0 - success -1 - failure
+ */
+int FIPSCHECK_get_library_path(const char *libname, const char *symbolname, char *path, size_t pathlen);
+
+/*
+ * Auxiliary function - returns the value of the kernel fips mode flag.
+ * Return value: 0 - the kernel fips mode flag is 0 or unreadable
+ * 1 - the kernel fips mode flag is 1
+ */
+int FIPSCHECK_kernel_fips_mode(void);

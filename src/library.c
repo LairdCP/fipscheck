@@ -35,6 +35,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "fipscheck.h"
 
@@ -43,9 +45,10 @@
 #ifndef PATH_FIPSCHECK
 #define PATH_FIPSCHECK "/usr/bin/fipscheck"
 #endif
+#define FIPS_MODE_SWITCH_FILE "/proc/sys/crypto/fips_enabled"
 
-static int
-get_binary_path(char *path, size_t pathlen)
+int
+FIPSCHECK_get_binary_path(char *path, size_t pathlen)
 {
 	ssize_t len;
 
@@ -60,8 +63,8 @@ get_binary_path(char *path, size_t pathlen)
 }
 
 
-static int
-get_library_path(const char *libname, const char *symbolname, char *path, size_t pathlen)
+int
+FIPSCHECK_get_library_path(const char *libname, const char *symbolname, char *path, size_t pathlen)
 {
 	Dl_info info;
 	void *dl, *sym;
@@ -135,9 +138,9 @@ FIPSCHECK_verify(const char *libname, const char *symbolname)
 	int rv;
 	
 	if (libname == NULL || symbolname == NULL) {
-		rv = get_binary_path(path, sizeof(path));
+		rv = FIPSCHECK_get_binary_path(path, sizeof(path));
 	} else {
-		rv = get_library_path(libname, symbolname, path, sizeof(path));
+		rv = FIPSCHECK_get_library_path(libname, symbolname, path, sizeof(path));
 	}
 
 	if (rv < 0)
@@ -152,3 +155,17 @@ FIPSCHECK_verify(const char *libname, const char *symbolname)
 	return 1;	
 }
 
+int
+FIPSCHECK_kernel_fips_mode(void)
+{
+	int fd;
+	char buf[1] = "";
+
+	if ((fd=open(FIPS_MODE_SWITCH_FILE, O_RDONLY)) >= 0) {
+		while (read(fd, buf, sizeof(buf)) < 0 && errno == EINTR);
+		close(fd);
+	}
+	if (buf[0] == '1')
+		return 1;
+	return 0;
+}

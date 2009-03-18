@@ -1,3 +1,24 @@
+2009-03-18  Tomas Mraz <tmraz@redhat.com>
+
+	* Makefile.am: Add generation of fipscheck.spec from .in
+	* configure.ac: Version 1.1.0
+	* README: More docs. Document new functions.
+
+	* fipscheck.spec.in: Add generation of the checksums in
+	__spec_install_post.
+	* src/Makefile.am: Link fipscheck with libfipscheck. Increment
+	minor libfipscheck version (new public functions).
+	* src/filehmac.c (compute_file_hmac): Switch to fips mode only
+	when requested.
+	* src/filehmac.h (compute_file_hmac): Add force_fips parameter.
+	* src/fipscheck.c (verify_hmac): New function. Request FIPS mode.
+	(main): Call verify_hmac() on libfipscheck, fipscheck itself, and
+	the path from argument.
+	* src/fipcheck.h: Add the auxiliary functions.
+	* src/fipshmac.c (main): Do not request FIPS mode.
+	* src/library.c: Rename get_library_path() and get_binary_path() and
+	make them public. Add FIPSCHECK_kernel_fips_mode() function.
+
 2009-02-09  Tomas Mraz <tmraz@redhat.com>
 
 	* README: Add some docs.

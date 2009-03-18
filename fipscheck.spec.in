@@ -36,6 +36,16 @@ This package contains development files for %{name}.
 
 make %{?_smp_mflags}
 
+# Add generation of HMAC checksums of the final stripped binaries
+%define __spec_install_post \
+    %{?__debug_package:%{__debug_install_post}} \
+    %{__arch_install_post} \
+    %{__os_install_post} \
+    $RPM_BUILD_ROOT/bin/fipshmac $RPM_BUILD_ROOT/bin/fipscheck \
+    $RPM_BUILD_ROOT/bin/fipshmac $RPM_BUILD_ROOT/%{_lib}/libfipscheck.so.1.1.0 \
+    ln -s .libfipscheck.so.1.1.0.hmac $RPM_BUILD_ROOT/%{_lib}/.libfipscheck.so.1.hmac \
+%{nil}
+
 %install
 rm -rf $RPM_BUILD_ROOT
 
@@ -59,7 +69,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc ChangeLog COPYING README AUTHORS
 /%{_lib}/libfipscheck.so.*
+/%{_lib}/.libfipscheck.so.*
 /bin/fipscheck
+/bin/.fipscheck.hmac
 /bin/fipshmac
 
 %files devel
@@ -68,6 +80,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libfipscheck.so
 
 %changelog
+* Wed Mar 18 2009 Tomas Mraz - 1.0.5-1
+- hmac check itself as required by FIPS
+
 * Mon Feb  9 2009 Tomas Mraz - 1.0.4-1
 - add some docs to the README, require current openssl in Fedora
 

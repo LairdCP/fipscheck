@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 		return 3;
 	}
 
-	if (compute_file_hmac(argv[1], &buf, &hmaclen) < 0) {
+	if (compute_file_hmac(argv[1], &buf, &hmaclen, 0) < 0) {
 		rv = 4;
 		goto end;
 	}

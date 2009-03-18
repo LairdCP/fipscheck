@@ -29,7 +29,7 @@
 #define HMAC_SUFFIX ".hmac"
 #define PATH_PRELINK "/usr/sbin/prelink"
 
-int compute_file_hmac(const char *path, void **buf, size_t *hmaclen);
+int compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips);
 
 char *bin2hex(void *buf, size_t len);
 

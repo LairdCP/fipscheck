@@ -91,7 +91,7 @@ spawn_prelink(const char *path, int *prelink)
 #endif
 
 int
-compute_file_hmac(const char *path, void **buf, size_t *hmaclen)
+compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 {
 	FILE *f = NULL;
 #ifdef CALL_PRELINK
@@ -103,7 +103,7 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen)
 	size_t len;
 	unsigned int hlen;
 
-	if (!FIPS_mode()) {
+	if (force_fips && !FIPS_mode()) {
 		if (!FIPS_mode_set(1)) {
 			return -1;
 		}

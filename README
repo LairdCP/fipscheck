@@ -25,10 +25,9 @@ original file name.
 * return values (exit codes): 0 - OK
   2 - Missing filename
   3 - Cannot open the checksum file
-  4 - Cannot read the file to be checksummed
+  4 - Cannot read the file to be checksummed, or the checksum computation failed
   5 - Memory allocation error
   6,7 - Cannot write to the checksum file
-
 
 fipscheck <filename-to-be-checksummed>
 
@@ -40,8 +39,10 @@ prepended and '.hmac' appended to the original file name.
   1 - Checksum mismatch
   2 - Missing filename
   3 - Cannot open the checksum file
-  4 - Cannot read the file to be checksummed
+  4 - Cannot read the file to be checksummed, or the checksum computation failed
   5 - Memory allocation error
+  10 and higher - Failure during self-checking the libfipscheck.so shared library
+  20 and higher - Failure during self-checking the fipscheck binary
 
 Library API
 ===========
@@ -58,6 +59,31 @@ integrity of fips validated libraries/executables.
 
 * return values: 0 - Failure
   1 - OK
+
+int FIPSCHECK_get_binary_path(char *path, size_t pathlen)
+
+Auxiliary function - returns path pointing to the executable file which is
+being run. The path buffer must be large enough to hold the path, otherwise
+it is truncated.
+
+* return values: 0 - success
+  -1 - failure
+
+int FIPSCHECK_get_library_path(const char *libname, const char *symbolname, char *path, size_t pathlen)
+
+Auxiliary function - returns path pointing to the shared library file with
+a name libname and containing a symbol symbolname. The path buffer must be
+large enough to hold the path, otherwise it is truncated.
+
+* return values: 0 - success
+  -1 - failure
+
+int FIPSCHECK_kernel_fips_mode(void)
+
+Auxiliary function - returns the value of the kernel fips mode flag.
+
+* return values: 0 - the kernel fips mode flag is 0 or unreadable
+  1 - the kernel fips mode flag is 1
 
 Format of the checksum file
 ===========================

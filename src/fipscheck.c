@@ -32,8 +32,9 @@
 #include <string.h>
 
 #include "filehmac.h"
+#include "fipscheck.h"
 
-int main(int argc, char *argv[])
+static int verify_hmac(const char *path)
 {
 	FILE *hf;
 	char *hmacpath, *p;
@@ -41,12 +42,7 @@ int main(int argc, char *argv[])
 	char *hmac = NULL;
 	size_t n;
 
-	if (argc < 2) {
-		fprintf(stderr, "usage: fipscheck <path-to-file>\n");
-		return 2;
-	}
-
-	hmacpath = make_hmac_path(argv[1]);
+	hmacpath = make_hmac_path(path);
 
 	hf = fopen(hmacpath, "r");
 	if (hf == NULL) {
@@ -62,7 +58,7 @@ int main(int argc, char *argv[])
 		if ((p=strchr(hmac, '\n')) != NULL)
 			*p = '\0';
 
-		if (compute_file_hmac(argv[1], &buf, &hmaclen) < 0) {
+		if (compute_file_hmac(path, &buf, &hmaclen, 1) < 0) {
 			rv = 4;
 			goto end;
 		}
@@ -85,4 +81,32 @@ end:
 	free(hmacpath);
 	fclose(hf);
 	return rv;
+}
+
+int main(int argc, char *argv[])
+{
+	int rv;
+	char buf[4096];
+
+	if (argc < 2) {
+		fprintf(stderr, "usage: fipscheck <path-to-file>\n");
+		return 2;
+	}
+
+	if (FIPSCHECK_get_library_path("libfipscheck.so.1",
+		"FIPSCHECK_get_library_path", buf, sizeof(buf)) != 0)
+		return 10;
+
+	if ((rv=verify_hmac(buf)) != 0) {
+		return rv+10;
+	}
+
+	if (FIPSCHECK_get_binary_path(buf, sizeof(buf)) != 0)
+		return 20;
+
+	if ((rv=verify_hmac(buf)) != 0) {
+		return rv+20;
+	}
+
+	return verify_hmac(argv[1]);
 }

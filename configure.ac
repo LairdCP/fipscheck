@@ -1,4 +1,4 @@
-AC_INIT([fipscheck],[1.0.4],[tmraz@redhat.com])
+AC_INIT([fipscheck],[1.1.0],[tmraz@redhat.com])
 AC_CONFIG_HEADER([config.h])
 AC_PREREQ(2.60)
 
