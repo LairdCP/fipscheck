@@ -80,7 +80,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libfipscheck.so
 
 %changelog
-* Wed Mar 18 2009 Tomas Mraz - 1.0.5-1
+* Wed Mar 18 2009 Tomas Mraz - 1.1.0-1
 - hmac check itself as required by FIPS
 
 * Mon Feb  9 2009 Tomas Mraz - 1.0.4-1
