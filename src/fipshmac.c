@@ -100,7 +100,7 @@ main(int argc, char *argv[])
 
 	debug_log_stderr();
 
-	for (i = 0; argv[i] != NULL; i++) {
+	for (i = 1; argv[i] != NULL; i++) {
 		int rv;
 		if ((rv=create_hmac(argv[i])) != 0)
 			return rv;
