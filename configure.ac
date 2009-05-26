@@ -1,4 +1,4 @@
-AC_INIT([fipscheck],[1.1.1],[tmraz@redhat.com])
+AC_INIT([fipscheck],[1.2.0],[tmraz@redhat.com])
 AC_CONFIG_HEADER([config.h])
 AC_PREREQ(2.60)
 
@@ -23,11 +23,14 @@ AC_CHECK_HEADERS( \
         sys/time.h \
         sys/types.h \
         time.h \
-        unistd.h
+        unistd.h \
+        syslog.h
 )
 
 AC_CHECK_FUNCS( \
-       fcntl
+       fcntl \
+       vasprintf \
+       syslog
 )
 
 dnl Checks for typedefs, structures, and compiler characteristics.
