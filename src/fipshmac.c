@@ -34,7 +34,8 @@
 
 #include "filehmac.h"
 
-int main(int argc, char *argv[])
+static int
+create_hmac(const char *path)
 {
 	FILE *hf;
 	char *hmacpath, *p;
@@ -44,31 +45,29 @@ int main(int argc, char *argv[])
 	void *buf;
 	char *hex;
 
-	if (argc < 2) {
-		fprintf(stderr, "usage: fipshmac <path-to-file>\n");
-		return 2;
-	}
-
-	hmacpath = make_hmac_path(argv[1]);
+	hmacpath = make_hmac_path(path);
 
 	hf = fopen(hmacpath, "w");
 	if (hf == NULL) {
+		debug_log("Cannot open hmac file '%s'", hmacpath);
 		free(hmacpath);
 		return 3;
 	}
 
-	if (compute_file_hmac(argv[1], &buf, &hmaclen, 0) < 0) {
+	if (compute_file_hmac(path, &buf, &hmaclen, 0) < 0) {
 		rv = 4;
 		goto end;
 	}
 
 	if ((hex=bin2hex(buf, hmaclen)) == NULL) {
+		debug_log("Cannot convert hmac to hexadecimal");
 		free(buf);
 		rv = 5;
 		goto end;
 	}
 
 	if (fprintf(hf, "%s\n", hex) < hmaclen*2) {
+		debug_log("Cannot write to hmac file '%s'", hmacpath);
 		rv = 6;
 	}
 
@@ -78,11 +77,34 @@ int main(int argc, char *argv[])
 end:
 	free(hmac);
 	if (fclose(hf) != 0) {
+		debug_log("Failure during closing hmac file '%s'", hmacpath);
 		rv = 7;
 	}
 	if (rv != 0) {
 		unlink(hmacpath);
 	}
 	free(hmacpath);
+
 	return rv;
+}
+
+int
+main(int argc, char *argv[])
+{
+	int i;
+
+	if (argc < 2) {
+		fprintf(stderr, "usage: fipshmac <paths-to-files>\n");
+		return 2;
+	}
+
+	debug_log_stderr();
+
+	for (i = 0; argv[i] != NULL; i++) {
+		int rv;
+		if ((rv=create_hmac(argv[i])) != 0)
+			return rv;
+	}
+
+	return 0;
 }

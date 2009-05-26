@@ -32,6 +32,12 @@
  */
 int FIPSCHECK_verify(const char *libname, const char *symbolname);
 
+/* Verifies the HMAC checksum of the files in the NULL terminated array of
+ * pointers.
+ * Return value: 0 - verification failed, 1 - verification succeded
+ */
+int FIPSCHECK_verify_files(const char *files[]);
+
 /*
  * Auxiliary function - returns path pointing to the executable file which is being
  * run. The path buffer must be large enough to hold the path, otherwise it is truncated.

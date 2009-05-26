@@ -18,11 +18,22 @@ FIPSCheck is a library for integrity verification of FIPS validated
 modules. The package also provides helper binaries for creation and
 verification of the HMAC-SHA256 checksum files.
 
+%package lib
+Summary:	Library files for %{name}
+Group:		System Environment/Libraries
+
+Requires:	%{_bindir}/fipscheck
+Obsoletes:	%{name} < 1.2.0-1
+Conflicts:	%{name} < 1.2.0-1
+
+%description lib
+This package contains the FIPSCheck library.
+
 %package devel
 Summary:	Development files for %{name}
 Group:		System Environment/Libraries
 
-Requires:	%{name} = %{version}-%{release}
+Requires:	%{name}-lib = %{version}-%{release}
 
 %description devel
 This package contains development files for %{name}.
@@ -31,8 +42,7 @@ This package contains development files for %{name}.
 %setup -q
 
 %build
-%configure --disable-static \
-	--bindir=/bin
+%configure --disable-static
 
 make %{?_smp_mflags}
 
@@ -41,9 +51,9 @@ make %{?_smp_mflags}
     %{?__debug_package:%{__debug_install_post}} \
     %{__arch_install_post} \
     %{__os_install_post} \
-    $RPM_BUILD_ROOT/bin/fipshmac $RPM_BUILD_ROOT/bin/fipscheck \
-    $RPM_BUILD_ROOT/bin/fipshmac $RPM_BUILD_ROOT/%{_lib}/libfipscheck.so.1.1.0 \
-    ln -s .libfipscheck.so.1.1.0.hmac $RPM_BUILD_ROOT/%{_lib}/.libfipscheck.so.1.hmac \
+    $RPM_BUILD_ROOT%{_bindir}/fipshmac $RPM_BUILD_ROOT%{_bindir}/fipscheck \
+    $RPM_BUILD_ROOT%{_bindir}/fipshmac $RPM_BUILD_ROOT%{_libdir}/libfipscheck.so.1.1.0 \
+    ln -s .libfipscheck.so.1.1.0.hmac $RPM_BUILD_ROOT%{_libdir}/.libfipscheck.so.1.hmac \
 %{nil}
 
 %install
@@ -52,11 +62,6 @@ rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
 find $RPM_BUILD_ROOT -type f -name "*.la" -delete
-
-mkdir $RPM_BUILD_ROOT/%{_lib}
-mv $RPM_BUILD_ROOT%{_libdir}/libfipscheck.so.* $RPM_BUILD_ROOT/%{_lib}
-
-ln -sf ../../%{_lib}/libfipscheck.so.1 $RPM_BUILD_ROOT%{_libdir}/libfipscheck.so
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -68,11 +73,14 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %doc ChangeLog COPYING README AUTHORS
-/%{_lib}/libfipscheck.so.*
-/%{_lib}/.libfipscheck.so.*
-/bin/fipscheck
-/bin/.fipscheck.hmac
-/bin/fipshmac
+%{_bindir}/fipscheck
+%{_bindir}/.fipscheck.hmac
+%{_bindir}/fipshmac
+
+%files lib
+%defattr(-,root,root,-)
+%{_libdir}/libfipscheck.so.*
+%{_libdir}/.libfipscheck.so.*
 
 %files devel
 %defattr(-,root,root,-)
@@ -80,6 +88,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libfipscheck.so
 
 %changelog
+* Tue May 26 2009 Tomas Mraz - 1.2.0-1
+- add lib subpackage to avoid multilib on the base package
+- add ability to compute hmacs on multiple files at once
+- improved debugging with FIPSCHECK_DEBUG
+
+* Thu Mar 19 2009 Tomas Mraz - 1.1.1-1
+- move binaries and libraries to /usr
+
 * Wed Mar 18 2009 Tomas Mraz - 1.1.0-1
 - hmac check itself as required by FIPS
 

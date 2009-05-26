@@ -32,8 +32,10 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <stdarg.h>
+#include <syslog.h>
 #include <sys/types.h>
-#include <sys/wait.h>       
+#include <sys/wait.h>
 #include <openssl/fips.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -43,6 +45,72 @@
 #define READ_BUFFER_LENGTH 16384
 
 static const char hmackey[] = "orboDeJITITejsirpADONivirpUkvarP";
+
+#define DEBUG_LOG_SYSLOG 1
+#define DEBUG_LOG_STDERR 2
+
+#define DEBUG_LOG_ENVVAR "FIPSCHECK_DEBUG"
+
+static int log_dest;
+
+static const char alloc_msg[] = "Memory allocation error";
+
+void
+debug_log_getenv(void)
+{
+	char *dbgenv;
+
+	dbgenv = getenv(DEBUG_LOG_ENVVAR);
+	if (dbgenv != NULL) {
+		if (strcasecmp(dbgenv, "syslog") == 0)
+			log_dest = DEBUG_LOG_SYSLOG;
+		else if (strcasecmp(dbgenv, "stderr") == 0 ||
+			 strcasecmp(dbgenv, "error") == 0)
+			log_dest = DEBUG_LOG_STDERR;
+	}
+}
+
+void
+debug_log(const char *fmt, ...)
+{
+	va_list args;
+	int save_errno = errno;
+	char *msg;
+
+	if (!log_dest)
+		return;
+
+	va_start(args, fmt);
+
+	if (vasprintf(&msg, fmt, args) < 0)
+		msg = (char *)alloc_msg;
+
+	va_end(args);
+
+	if (log_dest & DEBUG_LOG_SYSLOG) {
+		if (save_errno != 0)
+			syslog(LOG_ERR, "%s : %s", msg, strerror(save_errno));
+		else
+			syslog(LOG_ERR, "%s", msg);
+	}
+
+	if (log_dest & DEBUG_LOG_STDERR) {
+		if (save_errno != 0)
+			fprintf(stderr, "fipscheck: %s : %s\n", msg, strerror(save_errno));
+		else
+			fprintf(stderr, "fipscheck: %s\n", msg);
+	}
+
+	if (msg != alloc_msg)
+		free(msg);
+}
+
+
+void
+debug_log_stderr(void)
+{
+	log_dest = DEBUG_LOG_STDERR;
+}
 
 #ifdef CALL_PRELINK
 static FILE *
@@ -105,6 +173,7 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 
 	if (force_fips && !FIPS_mode()) {
 		if (!FIPS_mode_set(1)) {
+			debug_log("FIPS_mode_set() failed");
 			return -1;
 		}
 	}
@@ -124,6 +193,7 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 #endif
 
 	if (f == NULL) {
+		debug_log("Failed to open '%s'", path);
 		goto end;
 	}
 
@@ -139,6 +209,7 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 
 	*buf = malloc(hlen);
 	if (*buf == NULL) {
+		debug_log("Failed to allocate memory");
 		goto end;
 	}
 
@@ -161,6 +232,7 @@ end:
 		while ((ret=waitpid(prelink, &status, 0)) == -1 &&   /* wait for prelink to complete */
 			errno == EINTR);
 		if (ret <= 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+			debug_log("prelink failed");
 			rv = -1;
 		}
 	}

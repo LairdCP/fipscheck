@@ -34,7 +34,8 @@
 #include "filehmac.h"
 #include "fipscheck.h"
 
-static int verify_hmac(const char *path)
+static int
+verify_hmac(const char *path)
 {
 	FILE *hf;
 	char *hmacpath, *p;
@@ -43,9 +44,13 @@ static int verify_hmac(const char *path)
 	size_t n;
 
 	hmacpath = make_hmac_path(path);
+	if (hmacpath == NULL) {
+		debug_log("Cannot make hmac path");
+	}
 
 	hf = fopen(hmacpath, "r");
 	if (hf == NULL) {
+		debug_log("Cannot open hmac file '%s'", hmacpath);
 		free(hmacpath);
 		return 3;
 	}
@@ -64,12 +69,14 @@ static int verify_hmac(const char *path)
 		}
 
 		if ((hex=bin2hex(buf, hmaclen)) == NULL) {
+			debug_log("Cannot convert hmac to hexadecimal");
 			free(buf);
 			rv = 5;
 			goto end;
 		}
 
 		if (strcmp(hex, hmac) != 0) {
+			debug_log("Hmac mismatch on file '%s'", path);
 			rv = 1;
 		}
 		free(buf);
@@ -83,30 +90,44 @@ end:
 	return rv;
 }
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
-	int rv;
+	int rv, i;
 	char buf[4096];
 
 	if (argc < 2) {
-		fprintf(stderr, "usage: fipscheck <path-to-file>\n");
+		fprintf(stderr, "usage: fipscheck <paths-to-files>\n");
 		return 2;
 	}
 
+	debug_log_getenv();
+
 	if (FIPSCHECK_get_library_path("libfipscheck.so.1",
-		"FIPSCHECK_get_library_path", buf, sizeof(buf)) != 0)
+		"FIPSCHECK_get_library_path", buf, sizeof(buf)) != 0) {
+		debug_log("FIPSCHECK_get_library_path() failed");
 		return 10;
+	}
 
 	if ((rv=verify_hmac(buf)) != 0) {
 		return rv+10;
 	}
 
-	if (FIPSCHECK_get_binary_path(buf, sizeof(buf)) != 0)
+	if (FIPSCHECK_get_binary_path(buf, sizeof(buf)) != 0) {
+		debug_log("FIPSCHECK_get_binary_path() failed");
 		return 20;
+	}
 
 	if ((rv=verify_hmac(buf)) != 0) {
 		return rv+20;
 	}
 
-	return verify_hmac(argv[1]);
+	for (i = 1; i < argc; i++) {
+		rv = verify_hmac(argv[i]);
+		if (rv != 0) {
+			return rv;
+		}
+	}
+
+	return 0;
 }

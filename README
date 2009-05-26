@@ -16,7 +16,7 @@ The package depends on the OpenSSL library for its operation.
 Commands
 ========
 
-fipshmac <filename-to-be-checksummed>
+fipshmac <filenames-to-be-checksummed>
 
 This command will create a checksum file in the same directory as the file
 which is being checksummed. It will prepend '.' and append '.hmac' to the
@@ -29,7 +29,10 @@ original file name.
   5 - Memory allocation error
   6,7 - Cannot write to the checksum file
 
-fipscheck <filename-to-be-checksummed>
+If invoked correctly the fipshmac command will not print anything to the
+standard output or error. Otherwise it will print an error message to stderr.
+
+fipscheck <filenames-to-be-checksummed>
 
 This command will verify a checksum stored in the file in the same directory
 as the file which is being checksummed. The checksum file must have '.'
@@ -44,6 +47,11 @@ prepended and '.hmac' appended to the original file name.
   10 and higher - Failure during self-checking the libfipscheck.so shared library
   20 and higher - Failure during self-checking the fipscheck binary
 
+If invoked correctly the fipscheck command will not print anything to the
+standard output or error. If you set an environment variable FIPSCHECK_DEBUG to
+value "syslog", it will send eventual error messages to the syslog. If you set
+it to value "error", it will send them to the stderr.
+
 Library API
 ===========
 
@@ -57,8 +65,17 @@ or unreadable, or the checksum is wrong. Note that prelink will break the
 checksums so it must be disabled when fipscheck is used to verify the
 integrity of fips validated libraries/executables.
 
-* return values: 0 - Failure
-  1 - OK
+* return values: 0 - failure
+  1 - success
+
+int FIPSCHECK_verify_files(const char *files[])
+
+This will invoke fipscheck to verify the HMAC checksums of the files in
+the NULL terminated array of pointers. The same pitfalls which might
+cause verification errors apply as above.
+
+* return values: 0 - failure
+  1 - success
 
 int FIPSCHECK_get_binary_path(char *path, size_t pathlen)
 

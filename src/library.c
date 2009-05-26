@@ -83,14 +83,14 @@ FIPSCHECK_get_library_path(const char *libname, const char *symbolname, char *pa
 		rv = 0;
 	}
 
-	dlclose(dl);	
+	dlclose(dl);
 	
 	return rv;
 }
 
 
 static int
-run_fipscheck_helper(const char *path)
+run_fipscheck_helper(const char *paths[])
 {
 	int rv = -1, child;
 	void (*sighandler)(int) = NULL;
@@ -101,15 +101,26 @@ run_fipscheck_helper(const char *path)
 	child = fork();
 	if (child == 0) {
 		static char *envp[] = { NULL };
-		char * args[] = { NULL, NULL, NULL };
+		char **args;
+		int i;
+
+		for (i = 0; paths[i] != NULL; i++);
+
+		if (i < 1) /* nothing to check */
+			_exit(127);
+
+		args = calloc(i + 2, sizeof(*args));
+
+		if (args == NULL)
+			_exit(127);
 
 		args[0] = PATH_FIPSCHECK;
-		args[1] = (char *)path;
+		memcpy(&args[1], paths, sizeof(*args)*(i + 1));
 
 		execve(PATH_FIPSCHECK, args, envp);
 
 		/* if we get here: exit with error */
-		exit(127);
+		_exit(127);
 
 	} else if (child > 0) {
 		int status;
@@ -135,8 +146,9 @@ int
 FIPSCHECK_verify(const char *libname, const char *symbolname)
 {
 	char path[MAX_PATH_LEN];
+	const char *files[] = {path, NULL};
 	int rv;
-	
+
 	if (libname == NULL || symbolname == NULL) {
 		rv = FIPSCHECK_get_binary_path(path, sizeof(path));
 	} else {
@@ -146,13 +158,26 @@ FIPSCHECK_verify(const char *libname, const char *symbolname)
 	if (rv < 0)
 		return 0;
 
-	rv = run_fipscheck_helper(path);
-	
+	rv = run_fipscheck_helper(files);
+
 	if (rv < 0)
 		return 0;
 
 	/* check successful */
-	return 1;	
+	return 1;
+}
+
+int
+FIPSCHECK_verify_files(const char *files[])
+{
+	int rv;
+
+	rv = run_fipscheck_helper(files);
+
+	if (rv < 0)
+		return 0;
+
+	return 1;
 }
 
 int
