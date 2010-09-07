@@ -272,15 +272,11 @@ bin2hex(void *buf, size_t len)
 }
 
 char *
-make_hmac_path(const char *origpath)
+make_hmac_path(const char *origpath, const char *destdir)
 {
 	char *path, *p;
 	const char *fn;
-
-	path = malloc(sizeof(HMAC_PREFIX) + sizeof(HMAC_SUFFIX) + strlen(origpath));
-	if(path == NULL) {
-		return NULL;
-	}
+	size_t len;
 
 	fn = strrchr(origpath, '/');
 	if (fn == NULL) {
@@ -289,9 +285,28 @@ make_hmac_path(const char *origpath)
 		++fn;
 	}
 
-	strncpy(path, origpath, fn-origpath);
-	p = path + (fn - origpath);
-	p = stpcpy(p, HMAC_PREFIX);
+	if (destdir == NULL) {
+		len = sizeof(HMAC_PREFIX) + sizeof(HMAC_SUFFIX) + strlen(origpath);
+	}
+	else {
+		len = sizeof(HMAC_SUFFIX) + strlen(fn) + strlen(destdir) + 1;
+	}
+
+	path = malloc(len);
+	if(path == NULL) {
+		return NULL;
+	}
+
+	if (destdir == NULL) {
+		strncpy(path, origpath, fn-origpath);
+		p = path + (fn - origpath);
+		p = stpcpy(p, HMAC_PREFIX);
+	} else {
+		p = stpcpy(path, destdir);
+		if (p != path && *(p-1) != '/') {
+			p = stpcpy(p, "/");
+		}
+	}
 	p = stpcpy(p, fn);
 	p = stpcpy(p, HMAC_SUFFIX);
 

@@ -16,7 +16,7 @@ The package depends on the OpenSSL library for its operation.
 Commands
 ========
 
-fipshmac <filenames-to-be-checksummed>
+fipshmac [-d <path-to-destination-dir>] <filenames-to-be-checksummed>
 
 This command will create a checksum file in the same directory as the file
 which is being checksummed. It will prepend '.' and append '.hmac' to the
@@ -32,11 +32,17 @@ original file name.
 If invoked correctly the fipshmac command will not print anything to the
 standard output or error. Otherwise it will print an error message to stderr.
 
+If destination directory is specified with -d the resulting files will be put
+into it and '.' will not be prepended to the file names.
+
 fipscheck <filenames-to-be-checksummed>
 
-This command will verify a checksum stored in the file in the same directory
-as the file which is being checksummed. The checksum file must have '.'
-prepended and '.hmac' appended to the original file name.
+This command will verify a checksum of a file. The file containing the checksum
+value is first looked up in the /usr/lib{64,}/fipscheck directory and if not
+found there in the same directory as the file which is being checksummed.
+The checksum file must have '.' prepended and '.hmac' appended to the original
+file name. The '.' must not be prepended to the file names in the
+/usr/lib{64,}/fipscheck directory.
 
 * return values (exit codes): 0 - OK
   1 - Checksum mismatch

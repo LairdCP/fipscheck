@@ -37,23 +37,30 @@
 static int
 verify_hmac(const char *path)
 {
-	FILE *hf;
+	FILE *hf = NULL;
 	char *hmacpath, *p;
 	int rv = 0;
 	char *hmac = NULL;
 	size_t n;
+	const char *hmacdir = PATH_HMACDIR;
 
-	hmacpath = make_hmac_path(path);
-	if (hmacpath == NULL) {
-		debug_log("Cannot make hmac path");
-	}
+	do {
+		hmacpath = make_hmac_path(path, hmacdir);
+		if (hmacpath == NULL) {
+			debug_log("Cannot make hmac path");
+			return 5;
+		}
 
-	hf = fopen(hmacpath, "r");
-	if (hf == NULL) {
-		debug_log("Cannot open hmac file '%s'", hmacpath);
+		hf = fopen(hmacpath, "r");
+		if (hf == NULL && hmacdir == NULL) {
+			debug_log("Cannot open hmac file '%s'", hmacpath);
+			free(hmacpath);
+			return 3;
+		}
+
 		free(hmacpath);
-		return 3;
-	}
+		hmacdir = NULL;
+	} while (hf == NULL);
 
 	if (getline(&hmac, &n, hf) > 0) {
 		void *buf;
@@ -85,7 +92,6 @@ verify_hmac(const char *path)
 
 end:
 	free(hmac);
-	free(hmacpath);
 	fclose(hf);
 	return rv;
 }

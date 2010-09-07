@@ -6,7 +6,10 @@ lib_LTLIBRARIES = libfipscheck.la
 
 common_src = filehmac.c
 
+HMACDIR = $(libdir)/fipscheck
+
 fipscheck_SOURCES = fipscheck.c $(common_src)
+fipscheck_CPPFLAGS = -DPATH_HMACDIR=\"$(HMACDIR)\"
 fipscheck_LDADD = @LIBCRYPTO@ libfipscheck.la
 
 fipshmac_SOURCES = fipshmac.c $(common_src)

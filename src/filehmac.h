@@ -39,4 +39,4 @@ int compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_f
 
 char *bin2hex(void *buf, size_t len);
 
-char *make_hmac_path(const char *origpath);
+char *make_hmac_path(const char *origpath, const char *destdir);

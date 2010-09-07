@@ -1,7 +1,8 @@
-AC_INIT([fipscheck],[1.2.0],[tmraz@redhat.com])
+AC_INIT([fipscheck],[1.3.0],[tmraz@redhat.com])
 AC_CONFIG_HEADER([config.h])
 AC_PREREQ(2.60)
 
+AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 
 dnl Check for _GNU_SOURCE
@@ -14,6 +15,7 @@ dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
+AM_PROG_CC_C_O
 
 AC_CHECK_HEADERS( \
         fcntl.h \

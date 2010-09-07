@@ -51,9 +51,8 @@ make %{?_smp_mflags}
     %{?__debug_package:%{__debug_install_post}} \
     %{__arch_install_post} \
     %{__os_install_post} \
-    $RPM_BUILD_ROOT%{_bindir}/fipshmac $RPM_BUILD_ROOT%{_bindir}/fipscheck \
-    $RPM_BUILD_ROOT%{_bindir}/fipshmac $RPM_BUILD_ROOT%{_libdir}/libfipscheck.so.1.1.0 \
-    ln -s .libfipscheck.so.1.1.0.hmac $RPM_BUILD_ROOT%{_libdir}/.libfipscheck.so.1.hmac \
+    $RPM_BUILD_ROOT%{_bindir}/fipshmac -d $RPM_BUILD_ROOT%{_libdir}/fipscheck $RPM_BUILD_ROOT%{_bindir}/fipscheck $RPM_BUILD_ROOT%{_libdir}/libfipscheck.so.1.1.0 \
+    ln -s libfipscheck.so.1.1.0.hmac $RPM_BUILD_ROOT%{_libdir}/fipscheck/libfipscheck.so.1.hmac \
 %{nil}
 
 %install
@@ -63,24 +62,27 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 find $RPM_BUILD_ROOT -type f -name "*.la" -delete
 
+mkdir -p $RPM_BUILD_ROOT%{_libdir}/fipscheck
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post -p /sbin/ldconfig
+%post lib -p /sbin/ldconfig
 
-%postun -p /sbin/ldconfig
+%postun lib -p /sbin/ldconfig
 
 %files
 %defattr(-,root,root,-)
 %doc ChangeLog COPYING README AUTHORS
 %{_bindir}/fipscheck
-%{_bindir}/.fipscheck.hmac
 %{_bindir}/fipshmac
+%{_libdir}/fipscheck/fipscheck.hmac
 
 %files lib
 %defattr(-,root,root,-)
 %{_libdir}/libfipscheck.so.*
-%{_libdir}/.libfipscheck.so.*
+%dir %{_libdir}/fipscheck
+%{_libdir}/fipscheck/libfipscheck.so.*.hmac
 
 %files devel
 %defattr(-,root,root,-)
@@ -88,6 +90,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libfipscheck.so
 
 %changelog
+* Tue Sep  7 2010 Tomas Mraz - 1.3.0-1
+- look up the hmac files in the _libdir/fipscheck first
+
 * Tue May 26 2009 Tomas Mraz - 1.2.0-1
 - add lib subpackage to avoid multilib on the base package
 - add ability to compute hmacs on multiple files at once

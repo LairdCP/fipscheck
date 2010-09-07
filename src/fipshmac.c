@@ -35,17 +35,22 @@
 #include "filehmac.h"
 
 static int
-create_hmac(const char *path)
+create_hmac(const char *path, const char *destdir)
 {
 	FILE *hf;
-	char *hmacpath, *p;
+	char *hmacpath;
 	int rv = 0;
 	char *hmac = NULL;
 	size_t hmaclen;
 	void *buf;
 	char *hex;
 
-	hmacpath = make_hmac_path(path);
+	hmacpath = make_hmac_path(path, destdir);
+
+	if (hmacpath == NULL) {
+		debug_log("Cannot make hmac path");
+		return 5;
+	}
 
 	hf = fopen(hmacpath, "w");
 	if (hf == NULL) {
@@ -91,18 +96,28 @@ end:
 int
 main(int argc, char *argv[])
 {
-	int i;
+	int i = 1;
+	const char *destdir = NULL;
 
 	if (argc < 2) {
-		fprintf(stderr, "usage: fipshmac <paths-to-files>\n");
+		fprintf(stderr, "usage: fipshmac [-d <dir>] <paths-to-files>\n");
 		return 2;
 	}
 
 	debug_log_stderr();
 
-	for (i = 1; argv[i] != NULL; i++) {
+	if (strcmp(argv[1], "-d") == 0) {
+		i += 2;
+		if (argc < 4) {
+			fprintf(stderr, "Missing destination directory.\n");
+			return 2;
+		}
+		destdir = argv[2];
+	}
+
+	for (; argv[i] != NULL; i++) {
 		int rv;
-		if ((rv=create_hmac(argv[i])) != 0)
+		if ((rv=create_hmac(argv[i], destdir)) != 0)
 			return rv;
 	}
 
