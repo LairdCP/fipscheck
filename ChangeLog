@@ -1,3 +1,17 @@
+2009-05-26  Tomas Mraz <tmraz@redhat.com>
+
+	* fipscheck.spec.in: Add lib subpackage to avoid multilib on
+	the base package.
+	* src/fipscheck.c: Add ability to compute hmacs on multiple files
+	at once.
+	* src/fipshmac.c: Likewise.
+	* src/filehmac.c: Improved debugging with FIPSCHECK_DEBUG.
+
+2009-03-19  Tomas Mraz <tmraz@redhat.com>
+
+	* configure.ac: Version 1.1.1
+	* fipscheck.spec.in: Move binaries and libraries to /usr.
+
 2009-03-18  Tomas Mraz <tmraz@redhat.com>
 
 	* Makefile.am: Add generation of fipscheck.spec from .in
