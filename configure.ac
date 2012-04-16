@@ -1,4 +1,4 @@
-AC_INIT([fipscheck],[1.3.0],[tmraz@redhat.com])
+AC_INIT([fipscheck],[1.3.1],[tmraz@redhat.com])
 AC_CONFIG_HEADER([config.h])
 AC_PREREQ(2.60)
 
@@ -80,6 +80,6 @@ AC_ARG_WITH(sysconfdir,
 )
 AC_SUBST(SYSCONFDIR)
 
-AC_CONFIG_FILES([Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile man/Makefile])
 AC_OUTPUT
 
