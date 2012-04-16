@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+                   "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
+<refentry id='fipshmac8'>
+<refentryinfo><date>April 11, 2012</date></refentryinfo>
+<refmeta>
+<refentrytitle>fipshmac</refentrytitle>
+<manvolnum>8</manvolnum>
+<refmiscinfo class='date'>April 11, 2012</refmiscinfo>
+<refmiscinfo class='source'>fipscheck</refmiscinfo>
+<refmiscinfo class='manual'>fipshmac</refmiscinfo>
+</refmeta>
+<refnamediv id='name'>
+<refname>fipshmac</refname>
+<refpurpose>create FIPS-140-2 validation checksum files</refpurpose>
+</refnamediv>
+<!-- body begins here -->
+
+<refsect1 id='syntax'><title>SYNTAX</title>
+<para>fipshmac [<option>-d</option> &lt;<emphasis remap='I'>directory</emphasis>&gt;] file1 [file2 ...]
+</para>
+</refsect1>
+
+<refsect1 id='description'><title>DESCRIPTION</title>
+<para>
+fipshmac will create FIPS-140-2 checksum files for all the filenames specified.
+If the -d option is not specified, checksum files will be written in the same
+directory as the file being checksummed. It will prepend a '.' and append
+'.hmac' to the original file name. If -d is specfied, it will not prepend
+the '.'
+</para>
+<para>
+If invoked correctly the fipshmac command will not print anything to the
+standard output or error. Otherwise it will print an error message to stderr.
+</para>
+</refsect1>
+
+<refsect1 id='returncodes'><title>RETURN CODES</title>
+<para>
+fipscheck can return the following return codes:
+</para>
+<para> 0 OK</para>
+<para> 2 Missing filename</para>
+<para> 3 Cannot open the checksum file for writing</para>
+<para> 4 Cannot read the file to be checksummed, or the checksum computation failed</para>
+<para> 5 Memory allocation error</para>
+<para>6,7 Cannot write to the checksum file</para>
+</refsect1>
+
+<refsect1 id='see_also'><title>SEE ALSO</title>
+<para>
+<citerefentry> <refentrytitle>fipscheck</refentrytitle> <manvolnum>8</manvolnum></citerefentry>,
+<citerefentry> <refentrytitle>fipscheck.h</refentrytitle> <manvolnum>3</manvolnum></citerefentry>,
+<ulink url='https://fedorahosted.org/fipscheck/'>https://fedorahosted.org/fipscheck/</ulink>
+</para>
+</refsect1>
+
+<refsect1 id='author'><title>AUTHOR</title>
+<para>Tomas Mraz  &lt;tmraz@redhat.com&gt;.
+</para>
+
+<para>Man page by Paul Wouters &lt;pwouters@redhat.com&gt;</para>
+</refsect1>
+
+<refsect1 id='copyright'><title>COPYRIGHT</title>
+
+<para>Copyright 2008, 2012 Red Hat, Inc. All rights reserved.</para>
+<para>
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+</para>
+<para>
+1. Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.</para><para>
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+</para>
+</refsect1>
+</refentry>
+

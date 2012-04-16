@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+                   "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
+<refentry id='fipscheck8'>
+<refentryinfo><date>April 11, 2012</date></refentryinfo>
+<refmeta>
+<refentrytitle>fipscheck</refentrytitle>
+<manvolnum>8</manvolnum>
+<refmiscinfo class='date'>April 11, 2012</refmiscinfo>
+<refmiscinfo class='source'>fipscheck</refmiscinfo>
+<refmiscinfo class='manual'>fipscheck</refmiscinfo>
+</refmeta>
+<refnamediv id='name'>
+<refname>fipscheck</refname>
+<refpurpose>perform a FIPS-140-2 validation check of one or more files</refpurpose>
+</refnamediv>
+<!-- body begins here -->
+
+<refsect1 id='syntax'><title>SYNTAX</title>
+<para>fipscheck file1 [file2 ...]
+</para>
+</refsect1>
+
+<refsect1 id='description'><title>DESCRIPTION</title>
+<para>
+fipscheck will perform a FIPS-140-2 validation of a file using a 
+stored checksum of a file. The file containing the checksum
+value is first looked up in the /usr/lib{64,}/fipscheck directory and if not
+found there it will be searched for in the same directory as the file which
+is being checksummed.</para>
+<para>
+The checksum file must have '.' prepended and '.hmac' appended to the original
+file name. The '.' must not be prepended to the file names in the
+/usr/lib{64,}/fipscheck directory.
+</para>
+<para>
+If invoked correctly the fipscheck command will not print anything to the
+standard output or error and set the return code based on the test result. A
+return code of 0 means the file passed the checksum test. A value of non-zero
+means the checksum failed. 
+</para>
+</refsect1>
+
+<refsect1 id='returncodes'><title>RETURN CODES</title>
+<para>
+fipscheck can return the following return codes:
+</para>
+<para> 0 Checksum OK</para>
+<para> 1 Checksum mismatch</para>
+<para> 2 Missing filename</para>
+<para> 3 Cannot open the checksum file</para>
+<para> 4 Cannot read the file to be checksummed, or the checksum computation failed</para>
+<para> 5 Memory allocation error</para>
+<para>10 and higher - Failure during self-checking the libfipscheck.so shared library</para>
+<para>20 and higher -  Failure during self-checking the fipscheck binary </para>
+</refsect1>
+
+<refsect1 id='requirements'><title>ENVIRONMENT VARIABLES</title>
+<para>
+If you set the environment variable FIPSCHECK_DEBUG to "error", all error
+messages are sent to stderr. Setting this variable to "syslog" will send 
+all error messages to the syslog daemon.
+</para>
+</refsect1>
+
+<refsect1 id='fips'><title>FIPS MODE</title>
+<para>A kernel compiled with CONFIG_CRYPTO_FIPS=y can be booted in fips mode
+by specifying fips=1 as kernel parameter. If the /boot director resides on a
+different partition, this needs to be specfied, for example boot=/dev/sda2.
+</para>
+</refsect1>
+
+<refsect1 id='see_also'><title>SEE ALSO</title>
+<para><citerefentry> <refentrytitle>fipshmac</refentrytitle> <manvolnum>8</manvolnum></citerefentry>,
+<citerefentry> <refentrytitle>fipscheck.h</refentrytitle>
+<manvolnum>3</manvolnum></citerefentry>,
+<ulink url='https://fedorahosted.org/fipscheck/'>https://fedorahosted.org/fipscheck/</ulink>
+</para>
+</refsect1>
+
+<refsect1 id='author'><title>AUTHOR</title>
+<para>Tomas Mraz  &lt;tmraz@redhat.com&gt;.
+</para>
+
+<para>Man page by Paul Wouters &lt;pwouters@redhat.com&gt;</para>
+</refsect1>
+
+<refsect1 id='copyright'><title>COPYRIGHT</title>
+
+<para>Copyright 2008, 2012 Red Hat, Inc. All rights reserved.</para>
+<para>
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+</para>
+<para>
+1. Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.</para><para>
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+</para>
+</refsect1>
+</refentry>
+
