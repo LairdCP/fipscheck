@@ -26,8 +26,9 @@
 fipshmac will create FIPS-140-2 checksum files for all the filenames specified.
 If the -d option is not specified, checksum files will be written in the same
 directory as the file being checksummed. It will prepend a '.' and append
-'.hmac' to the original file name. If -d is specfied, it will not prepend
-the '.'
+'.hmac' to the original file name. When a directory is specified with the
+<option>-d</option> option, the '.' will not be prepended and the files
+are stored into the directory.
 </para>
 <para>
 If invoked correctly the fipshmac command will not print anything to the

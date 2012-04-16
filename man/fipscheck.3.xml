@@ -2,11 +2,11 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
                    "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
 <refentry id='fipscheck3'>
-<refentryinfo><date>11 April 2012</date></refentryinfo>
+<refentryinfo><date>16 April 2012</date></refentryinfo>
 <refmeta>
 <refentrytitle>FIPSCHECK</refentrytitle>
 <manvolnum>3</manvolnum>
-<refmiscinfo class='date'>11 April 2012</refmiscinfo>
+<refmiscinfo class='date'>16 April 2012</refmiscinfo>
 <refmiscinfo class='source'>fipscheck</refmiscinfo>
 <refmiscinfo class='manual'>fipscheck</refmiscinfo>
 </refmeta>
@@ -61,18 +61,47 @@
 
 
 <refsect1 id='description'><title>DESCRIPTION</title>
-<para>These functions test for FIPS-140-2 mode, and can generate or
-verify the binaries by their checksum files.
+<para>The function <function>FIPSCHECK_kernel_fips_mode()</function> tests
+for the FIPS-140-2 mode in kernel.
 </para>
 
-<para>All functions return 0 for success and -1 for failure, with the
-exception of FIPSCHECK_kernel_fips_mode, which returns 1 when the kernel
-is in fips mode.
+<para>The function <function>FIPSCHECK_verify()</function> computes and compares
+HMAC-SHA256 checksum by spawning the <command>fipscheck</command> command.
+The parameters <parameter>libname</parameter> and <parameter>symbolname</parameter>
+determine which shared library file loaded into the process space will be checksummed.
+If these parameters are set to NULL, the executable of the calling process is
+checksummed.
+</para>
+
+<para>The function <function>FIPSCHECK_verify_files()</function> can be used
+to explicitly specify NULL terminated array of file names in the parameter
+<parameter>files</parameter> to check.
 </para>
 
 <para>
 The checksum file contains the HMAC-SHA256 encoded in hexadecimal notation
 using lowercase letters with one EOL character appended at the end.
+</para>
+
+<para>The functions <function>FIPSCHECK_get_library_path()</function> and
+<function>FIPSCHECK_get_binary_path()</function> return the shared library
+and executable paths in the <parameter>path</parameter>. The buffer pointed
+to by the parameter must be large enough to hold the path otherwise
+the path is truncated. The size of the buffer is specified by the
+<parameter>pathlen</parameter>.
+</para>
+</refsect1>
+
+<refsect1 id='returnvalue'><title>RETURN VALUE</title>
+<para>The main functions <function>FIPSCHECK_verify()</function> and
+<function>FIPSCHECK_verify_files()</function> return 1 when the
+verification of the binaries succeeds and 0 otherwise. The function
+<function>FIPSCHECK_kernel_fips_mode()</function> returns 1 when the
+kernel is in fips mode and 0 otherwise.
+</para>
+<para>The auxiliary functions <function>FIPSCHECK_get_binary_path()</function>
+and <function>FIPSCHECK_get_library_path()</function> return 0 on success
+and -1 if the path cannot be determined.
 </para>
 </refsect1>
 
@@ -93,7 +122,7 @@ of the Kernel FIPS module for further details.
 <para>Tomas Mraz  &lt;tmraz@redhat.com&gt;.
 </para>
 
-<para>Man page by Paul Wouters &lt;pwouters@redhat.com&gt;</para>
+<para>Man page authors Paul Wouters &lt;pwouters@redhat.com&gt; and Tomas Mraz  &lt;tmraz@redhat.com&gt;.</para>
 </refsect1>
 
 <refsect1 id='copyright'><title>COPYRIGHT</title>

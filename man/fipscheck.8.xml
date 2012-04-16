@@ -26,7 +26,7 @@
 fipscheck will perform a FIPS-140-2 validation of a file using a 
 stored checksum of a file. The file containing the checksum
 value is first looked up in the /usr/lib{64,}/fipscheck directory and if not
-found there it will be searched for in the same directory as the file which
+found there, it will be searched for in the same directory as the file which
 is being checksummed.</para>
 <para>
 The checksum file must have '.' prepended and '.hmac' appended to the original
