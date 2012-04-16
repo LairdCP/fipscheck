@@ -104,6 +104,8 @@ main(int argc, char *argv[])
 
 	if (argc < 2) {
 		fprintf(stderr, "usage: fipscheck <paths-to-files>\n");
+		fprintf(stdout,"fips mode is %s\n", 
+			FIPSCHECK_kernel_fips_mode() ? "on" : "off" );
 		return 2;
 	}
 
