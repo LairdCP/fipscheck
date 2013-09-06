@@ -39,6 +39,7 @@
 #include <fcntl.h>
 
 #include "fipscheck.h"
+#include "filehmac.h"
 
 #define MAX_PATH_LEN 4096
 #define SELFLINK "/proc/self/exe"
@@ -90,7 +91,7 @@ FIPSCHECK_get_library_path(const char *libname, const char *symbolname, char *pa
 
 
 static int
-run_fipscheck_helper(const char *paths[])
+run_fipscheck_helper(const char *hmac_suffix, const char *paths[])
 {
 	int rv = -1, child;
 	void (*sighandler)(int) = NULL;
@@ -102,20 +103,25 @@ run_fipscheck_helper(const char *paths[])
 	if (child == 0) {
 		static char *envp[] = { NULL };
 		char **args;
-		int i;
+		int i, offset = 1;
 
 		for (i = 0; paths[i] != NULL; i++);
 
 		if (i < 1) /* nothing to check */
 			_exit(127);
 
-		args = calloc(i + 2, sizeof(*args));
+		args = calloc(i + 4, sizeof(*args));
 
 		if (args == NULL)
 			_exit(127);
 
 		args[0] = PATH_FIPSCHECK;
-		memcpy(&args[1], paths, sizeof(*args)*(i + 1));
+		if (hmac_suffix) {
+			args[1] = "-s";
+			args[2] = (char *)hmac_suffix;
+			offset = 3;
+		}
+		memcpy(&args[offset], paths, sizeof(*args)*(i + 1));
 
 		execve(PATH_FIPSCHECK, args, envp);
 
@@ -141,9 +147,46 @@ run_fipscheck_helper(const char *paths[])
 	return rv;
 }
 
+static int
+test_hmac_installed(const char *path, const char *hmac_suffix)
+{
+	const char *hmacdir = PATH_HMACDIR;
+	char *hmacpath;
+	int rv;
+
+	do {
+		hmacpath = make_hmac_path(path, hmacdir, hmac_suffix);
+		if (hmacpath == NULL) {
+			/* we must fail later */
+			return 1;
+		}
+
+		rv = access(hmacpath, F_OK);
+		if (rv < 0 && errno != ENOENT) {
+			rv = 0;
+		}
+
+		free(hmacpath);
+
+		if (rv < 0 && hmacdir == NULL) {
+			/* hmac not found */
+			return 0;
+		}
+
+		hmacdir = NULL;
+        } while (rv < 0);
+	/* hmac found */
+        return 1;
+}
 
 int
 FIPSCHECK_verify(const char *libname, const char *symbolname)
+{
+	return FIPSCHECK_verify_ex(libname, symbolname, NULL, 1);
+}
+
+int
+FIPSCHECK_verify_ex(const char *libname, const char *symbolname, const char *hmac_suffix, int fail_if_missing)
 {
 	char path[MAX_PATH_LEN];
 	const char *files[] = {path, NULL};
@@ -158,7 +201,10 @@ FIPSCHECK_verify(const char *libname, const char *symbolname)
 	if (rv < 0)
 		return 0;
 
-	rv = run_fipscheck_helper(files);
+	if (!fail_if_missing && test_hmac_installed(path, hmac_suffix))
+		return 1;
+
+	rv = run_fipscheck_helper(hmac_suffix, files);
 
 	if (rv < 0)
 		return 0;
@@ -170,14 +216,42 @@ FIPSCHECK_verify(const char *libname, const char *symbolname)
 int
 FIPSCHECK_verify_files(const char *files[])
 {
+	return FIPSCHECK_verify_files_ex(NULL, 1, files);
+}
+
+int
+FIPSCHECK_verify_files_ex(const char *hmac_suffix, int fail_if_missing, const char *files[])
+{
 	int rv;
 
-	rv = run_fipscheck_helper(files);
+	if (!fail_if_missing && !test_hmac_installed(files[0], hmac_suffix))
+		return 1;
+
+	rv = run_fipscheck_helper(hmac_suffix, files);
 
 	if (rv < 0)
 		return 0;
 
 	return 1;
+}
+
+int
+FIPSCHECK_fips_module_installed(const char *libname, const char *symbolname, const char *hmac_suffix)
+{
+	char path[MAX_PATH_LEN];
+	int rv;
+
+	if (libname == NULL || symbolname == NULL) {
+		rv = FIPSCHECK_get_binary_path(path, sizeof(path));
+	} else {
+		rv = FIPSCHECK_get_library_path(libname, symbolname, path, sizeof(path));
+	}
+
+	if (rv < 0)
+		/* Fail safe - that is as if the module was installed */
+		return 1;
+
+	return test_hmac_installed(path, hmac_suffix);
 }
 
 int

@@ -35,7 +35,7 @@
 #include "filehmac.h"
 
 static int
-create_hmac(const char *path, const char *destdir)
+create_hmac(const char *path, const char *destdir, const char *hmac_suffix)
 {
 	FILE *hf;
 	char *hmacpath;
@@ -45,7 +45,7 @@ create_hmac(const char *path, const char *destdir)
 	void *buf;
 	char *hex;
 
-	hmacpath = make_hmac_path(path, destdir);
+	hmacpath = make_hmac_path(path, destdir, hmac_suffix);
 
 	if (hmacpath == NULL) {
 		debug_log("Cannot make hmac path");
@@ -96,8 +96,9 @@ end:
 int
 main(int argc, char *argv[])
 {
-	int i = 1;
+	int i, j = 1;
 	const char *destdir = NULL;
+	const char *hmac_suffix = NULL;
 
 	if (argc < 2) {
 		fprintf(stderr, "usage: fipshmac [-d <dir>] <paths-to-files>\n");
@@ -107,7 +108,7 @@ main(int argc, char *argv[])
 	debug_log_stderr();
 
 	if (strcmp(argv[1], "-d") == 0) {
-		i += 2;
+		j += 2;
 		if (argc < 4) {
 			fprintf(stderr, "Missing destination directory.\n");
 			return 2;
@@ -115,9 +116,25 @@ main(int argc, char *argv[])
 		destdir = argv[2];
 	}
 
-	for (; argv[i] != NULL; i++) {
+	for (i = j; i < argc; i++) {
+		if (strcmp(argv[i], "-s") == 0) {
+			i++;
+			if (i >= argc) {
+				fprintf(stderr, "Missing argument of the -s option\n");
+				return 2;
+			}
+			hmac_suffix = argv[i];
+		}
+	}
+
+	for (i = j; argv[i] != NULL; i++) {
 		int rv;
-		if ((rv=create_hmac(argv[i], destdir)) != 0)
+
+		if (strcmp(argv[i], "-s") == 0) {
+			i++;
+			continue;
+		}
+		if ((rv=create_hmac(argv[i], destdir, hmac_suffix)) != 0)
 			return rv;
 	}
 

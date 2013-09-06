@@ -34,6 +34,11 @@ are stored into the directory.
 If invoked correctly the fipshmac command will not print anything to the
 standard output or error. Otherwise it will print an error message to stderr.
 </para>
+<para>
+The <option>-s</option> option allows to specify the suffix of the hmac file
+names. The default value <emphasis>.hmac</emphasis> is used when this option
+is not specified.
+</para>
 </refsect1>
 
 <refsect1 id='returncodes'><title>RETURN CODES</title>

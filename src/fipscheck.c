@@ -35,7 +35,7 @@
 #include "fipscheck.h"
 
 static int
-verify_hmac(const char *path)
+verify_hmac(const char *path, const char *hmac_suffix)
 {
 	FILE *hf = NULL;
 	char *hmacpath, *p;
@@ -45,7 +45,7 @@ verify_hmac(const char *path)
 	const char *hmacdir = PATH_HMACDIR;
 
 	do {
-		hmacpath = make_hmac_path(path, hmacdir);
+		hmacpath = make_hmac_path(path, hmacdir, hmac_suffix);
 		if (hmacpath == NULL) {
 			debug_log("Cannot make hmac path");
 			return 5;
@@ -101,9 +101,10 @@ main(int argc, char *argv[])
 {
 	int rv, i;
 	char buf[4096];
+	const char *hmac_suffix = NULL;
 
 	if (argc < 2) {
-		fprintf(stderr, "usage: fipscheck <paths-to-files>\n");
+		fprintf(stderr, "usage: fipscheck [-s <hmac-suffix>] <paths-to-files>\n");
 		fprintf(stdout,"fips mode is %s\n", 
 			FIPSCHECK_kernel_fips_mode() ? "on" : "off" );
 		return 2;
@@ -117,7 +118,7 @@ main(int argc, char *argv[])
 		return 10;
 	}
 
-	if ((rv=verify_hmac(buf)) != 0) {
+	if ((rv=verify_hmac(buf, NULL)) != 0) {
 		return rv+10;
 	}
 
@@ -126,12 +127,27 @@ main(int argc, char *argv[])
 		return 20;
 	}
 
-	if ((rv=verify_hmac(buf)) != 0) {
+	if ((rv=verify_hmac(buf, NULL)) != 0) {
 		return rv+20;
 	}
 
 	for (i = 1; i < argc; i++) {
-		rv = verify_hmac(argv[i]);
+		if (strcmp(argv[i], "-s") == 0) {
+			i++;
+			if (i >= argc) {
+				fprintf(stderr, "Missing argument of the -s option\n");
+				return 2;
+			}
+			hmac_suffix = argv[i];
+		}
+	}
+
+	for (i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-s") == 0) {
+			i++;
+			continue;
+		}
+		rv = verify_hmac(argv[i], hmac_suffix);
 		if (rv != 0) {
 			return rv;
 		}

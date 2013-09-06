@@ -17,7 +17,7 @@
 <!-- body begins here -->
 
 <refsect1 id='syntax'><title>SYNTAX</title>
-<para>fipscheck file1 [file2 ...]
+<para>fipscheck [<option>-s</option> &lt;<emphasis remap='I'>hmac-suffix</emphasis>&gt;] file1 [file2 ...]
 </para>
 </refsect1>
 
@@ -38,6 +38,11 @@ If invoked correctly the fipscheck command will not print anything to the
 standard output or error and set the return code based on the test result. A
 return code of 0 means the file passed the checksum test. A value of non-zero
 means the checksum failed. 
+</para>
+<para>
+The <option>-s</option> option allows to specify the suffix of the hmac file
+names. The default value <emphasis>.hmac</emphasis> is used when this option
+is not specified.
 </para>
 </refsect1>
 

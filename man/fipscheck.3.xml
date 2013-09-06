@@ -12,7 +12,10 @@
 </refmeta>
 <refnamediv id='name'>
 <refname>FIPSCHECK_verify</refname>
+<refname>FIPSCHECK_verify_ex</refname>
 <refname>FIPSCHECK_verify_files</refname>
+<refname>FIPSCHECK_verify_files_ex</refname>
+<refname>FIPSCHECK_fips_module_installed</refname>
 <refname>FIPSCHECK_get_binary_path</refname>
 <refname>FIPSCHECK_get_library_path</refname>
 <refname>FIPSCHECK_kernel_fips_mode</refname>
@@ -29,12 +32,34 @@
 <funcprototype>
 <funcdef>int <function>FIPSCHECK_verify</function></funcdef>
     <paramdef>const char *<parameter>libname</parameter></paramdef>
-    <paramdef>const char * <parameter>symbolname</parameter></paramdef>
+    <paramdef>const char *<parameter>symbolname</parameter></paramdef>
+</funcprototype>
+
+<funcprototype>
+<funcdef>int <function>FIPSCHECK_verify_ex</function></funcdef>
+    <paramdef>const char *<parameter>libname</parameter></paramdef>
+    <paramdef>const char *<parameter>symbolname</parameter></paramdef>
+    <paramdef>const char *<parameter>hmac_suffix</parameter></paramdef>
+    <paramdef>int <parameter>fail_if_missing</parameter></paramdef>
 </funcprototype>
 
 <funcprototype>
 <funcdef>int <function>FIPSCHECK_verify_files</function></funcdef>
     <paramdef>const char *<parameter>files[]</parameter></paramdef>
+</funcprototype>
+
+<funcprototype>
+<funcdef>int <function>FIPSCHECK_verify_files_ex</function></funcdef>
+    <paramdef>const char *<parameter>hmac_suffix</parameter></paramdef>
+    <paramdef>int <parameter>fail_if_missing</parameter></paramdef>
+    <paramdef>const char *<parameter>files[]</parameter></paramdef>
+</funcprototype>
+
+<funcprototype>
+<funcdef>int <function>FIPSCHECK_fips_module_installed</function></funcdef>
+    <paramdef>const char *<parameter>libname</parameter></paramdef>
+    <paramdef>const char *<parameter>symbolname</parameter></paramdef>
+    <paramdef>const char *<parameter>hmac_suffix</parameter></paramdef>
 </funcprototype>
 
 <funcprototype>
@@ -73,14 +98,31 @@ If these parameters are set to NULL, the executable of the calling process is
 checksummed.
 </para>
 
+<para>The function <function>FIPSCHECK_verify_ex()</function> in addition to
+the functionality above also allows to specify the full <parameter>hmac_suffix</parameter>
+with the default value of .hmac. And will return success if the hmac file is
+missing and the <parameter>fail_if_missing</parameter> parameter is set to 0.
+</para>
+
 <para>The function <function>FIPSCHECK_verify_files()</function> can be used
 to explicitly specify NULL terminated array of file names in the parameter
 <parameter>files</parameter> to check.
 </para>
 
+<para>Similarly the function <function>FIPSCHECK_verify_files_ex()</function> in addition to
+the functionality above also allows to specify the full <parameter>hmac_suffix</parameter>
+with the default value of .hmac. And will return success if the first hmac
+file is missing and the  <parameter>fail_if_missing</parameter> parameter
+is set to 0.
+</para>
+
 <para>
 The checksum file contains the HMAC-SHA256 encoded in hexadecimal notation
 using lowercase letters with one EOL character appended at the end.
+</para>
+
+<para>The function <function>FIPSCHECK_fips_module_installed()</function>
+returns 1 if the hmac checksum file is found and 0 otherwise.
 </para>
 
 <para>The functions <function>FIPSCHECK_get_library_path()</function> and

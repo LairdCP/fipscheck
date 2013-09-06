@@ -27,16 +27,41 @@
 
 /* Verifies the HMAC checksum of the library or binary which contains the symbol.
  * If libname or symbolname is NULL, then the executable binary which is being
- * executed is verified.
+ * executed is verified. Verification fails if the checksum file is not found.
  * Return value: 0 - verification failed, 1 - verification succeded
  */
 int FIPSCHECK_verify(const char *libname, const char *symbolname);
 
+/* Verifies the HMAC checksum of the library or binary which contains the symbol.
+ * If libname or symbolname is NULL, then the executable binary which is being
+ * executed is verified. Non NULL hmac_suffix specifies the file name
+ * suffix of the HMAC checksum file. fail_if_missing flag specifies
+ * whether verification should fail if the checksum file is not found
+ * Return value: 0 - verification failed, 1 - verification succeded
+ */
+int FIPSCHECK_verify_ex(const char *libname, const char *symbolname, const char *hmac_suffix, int fail_if_missing);
+
 /* Verifies the HMAC checksum of the files in the NULL terminated array of
- * pointers.
+ * pointers. Fails if the hmacs are missing.
  * Return value: 0 - verification failed, 1 - verification succeded
  */
 int FIPSCHECK_verify_files(const char *files[]);
+
+/* Verifies the HMAC checksum of the files in the NULL terminated array of
+ * pointers with possibility to specify the file name suffix and failure
+ * on missing hmac.
+ * Return value: 0 - verification failed, 1 - verification succeded
+ */
+int FIPSCHECK_verify_files_ex(const char *hmac_suffix, int fail_if_missing, const char *files[]);
+
+/* Checks for presence of the HMAC checksum of the library or binary which
+ * contains the symbol.
+ * If libname or symbolname is NULL, then the checksum of the executable
+ * binary which is being executed is looked up. Non NULL hmac_suffix
+ * specifies the file name suffix of the HMAC checksum file.
+ * Return value: 0 - checksum not found, 1 - checksum found
+ */
+int FIPSCHECK_fips_module_installed(const char *libname, const char *symbolname, const char *hmac_suffix);
 
 /*
  * Auxiliary function - returns path pointing to the executable file which is being

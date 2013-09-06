@@ -1,4 +1,4 @@
-/* filehmac.h */
+/* hmacpath.c */
 /*
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,18 +25,55 @@
  * either expressed or implied, of Red Hat, Inc.
  */
 
-#define HMAC_PREFIX "."
-#define HMAC_SUFFIX ".hmac"
-#define PATH_PRELINK "/usr/sbin/prelink"
+#include "config.h"
 
-void debug_log(const char *fmt, ...);
+#include <stdlib.h>
+#include <string.h>
 
-void debug_log_stderr(void);
+#include "filehmac.h"
 
-void debug_log_getenv(void);
+char *
+make_hmac_path(const char *origpath, const char *destdir, const char *hmac_suffix)
+{
+	char *path, *p;
+	const char *fn;
+	size_t len;
 
-int compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips);
+	if (hmac_suffix == NULL) {
+		hmac_suffix = HMAC_SUFFIX;
+	}
 
-char *bin2hex(void *buf, size_t len);
+	fn = strrchr(origpath, '/');
+	if (fn == NULL) {
+		fn = origpath;
+	} else {
+		++fn;
+	}
 
-char *make_hmac_path(const char *origpath, const char *destdir, const char *hmac_suffix) __attribute__ ((visibility ("hidden")));
+	if (destdir == NULL) {
+		len = sizeof(HMAC_PREFIX) + strlen(hmac_suffix) + strlen(origpath) + 1;
+	}
+	else {
+		len = strlen(hmac_suffix) + strlen(fn) + strlen(destdir) + 2;
+	}
+
+	path = malloc(len);
+	if(path == NULL) {
+		return NULL;
+	}
+
+	if (destdir == NULL) {
+		strncpy(path, origpath, fn-origpath);
+		p = path + (fn - origpath);
+		p = stpcpy(p, HMAC_PREFIX);
+	} else {
+		p = stpcpy(path, destdir);
+		if (p != path && *(p-1) != '/') {
+			p = stpcpy(p, "/");
+		}
+	}
+	p = stpcpy(p, fn);
+	p = stpcpy(p, hmac_suffix);
+
+	return path;
+}
