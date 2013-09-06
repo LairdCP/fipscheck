@@ -1,5 +1,7 @@
 SUBDIRS = src man
 
+ACLOCAL_AMFLAGS = -I m4
+
 EXTRA_DIST = fipscheck.spec fipscheck.spec.in
 
 fipscheck.spec: fipscheck.spec.in

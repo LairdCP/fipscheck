@@ -19,7 +19,7 @@ fipshmac_LDADD = @LIBCRYPTO@
 libfipscheck_la_SOURCES = library.c fipscheck.h $(hmacpath_src)
 libfipscheck_la_CPPFLAGS = -DPATH_FIPSCHECK=\"$(bindir)/fipscheck\" -DPATH_HMACDIR=\"$(HMACDIR)\"
 libfipscheck_la_LIBADD = @LIBDL@
-libfipscheck_la_LDFLAGS = -no-undefined -version-info 2:0:1
+libfipscheck_la_LDFLAGS = -no-undefined -version-info 3:0:2
 
 noinst_HEADERS = filehmac.h
 
