@@ -101,7 +101,7 @@ main(int argc, char *argv[])
 	const char *hmac_suffix = NULL;
 
 	if (argc < 2) {
-		fprintf(stderr, "usage: fipshmac [-d <dir>] [-s <hmac_suffix>] <paths-to-files>\n");
+		fprintf(stderr, "usage: fipshmac [-d <dir>] [-s <hmac-suffix>] <paths-to-files>\n");
 		return 2;
 	}
 
