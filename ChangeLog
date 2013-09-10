@@ -1,5 +1,30 @@
+2013-09-10  Tomáš Mráz <tmraz@redhat.com>
+
+	* configure.ac: Version 1.4.1
+	* src/Makefile.am: Update library version.
+	* src/library.c: Add missing negation of test_hmac_installed() result.
+	* README: Drop duplicity of API doc with manpage and update.
+
+2013-09-06  Tomáš Mráz <tmraz@redhat.com>
+
+	* configure.ac: Version 1.4.0
+	* man/Makefile.am: Add new API manpage links.
+	* man/fipscheck.3.xml: Add description of new API calls.
+	* man/fipscheck.8.xml: Add -s option description.
+	* man/fipshmac.8.xml: Likewise.
+	* src/Makefile.am: hmacpath.c splitted out of filehmac.c.
+	* src/filehmac.c: Likewise.
+	* src/filehmac.h: Mark make_hmac_path hidden.
+	* src/fipscheck.c: Add -s option to specify the hmac suffix.
+	* src/fipshmac.c: Likewise.
+	* src/fipscheck.h: Add new API calls to support setting
+	hmac suffix and testing for installed hmacs.
+	* src/library.c: Likewise.
+	* src/hmacpath.c: New file splitted out of filehmac.c.
+
 2012-04-16  Tomas Mraz <tmraz@redhat.com>
 
+	* configure.ac: Version 1.3.1
 	* man/Makefile.am: Integrate the manual pages into build.
 	* man/fipscheck.3.xml: Improved documentation of the API.
 

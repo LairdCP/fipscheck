@@ -16,11 +16,11 @@ The package depends on the OpenSSL library for its operation.
 Commands
 ========
 
-fipshmac [-d <path-to-destination-dir>] <filenames-to-be-checksummed>
+fipshmac [-d <path-to-destination-dir>] [-s <hmac-suffix>] <filenames-to-be-checksummed>
 
 This command will create a checksum file in the same directory as the file
-which is being checksummed. It will prepend '.' and append '.hmac' to the
-original file name.
+which is being checksummed. It will prepend '.' and append <hmac-suffix> to the
+original file name. If the suffix is not specified '.hmac' is used.
 
 * return values (exit codes): 0 - OK
   2 - Missing filename
@@ -35,14 +35,14 @@ standard output or error. Otherwise it will print an error message to stderr.
 If destination directory is specified with -d the resulting files will be put
 into it and '.' will not be prepended to the file names.
 
-fipscheck <filenames-to-be-checksummed>
+fipscheck [-s <hmac-suffix>] <filenames-to-be-checksummed>
 
 This command will verify a checksum of a file. The file containing the checksum
 value is first looked up in the /usr/lib{64,}/fipscheck directory and if not
 found there in the same directory as the file which is being checksummed.
-The checksum file must have '.' prepended and '.hmac' appended to the original
+The checksum file must have '.' prepended and <hmac-suffix> appended to the original
 file name. The '.' must not be prepended to the file names in the
-/usr/lib{64,}/fipscheck directory.
+/usr/lib{64,}/fipscheck directory. If the suffix is not specified '.hmac' is used.
 
 * return values (exit codes): 0 - OK
   1 - Checksum mismatch
@@ -61,52 +61,7 @@ it to value "error", it will send them to the stderr.
 Library API
 ===========
 
-int FIPSCHECK_verify(const char *libname, const char *symbolname)
-
-This will invoke fipscheck on either a shared library if both libname and
-symbolname are not NULL or on the executable binary from which the
-FIPSCHECK_verify was called. Possible causes of the failed checks are
-the shared library/executable cannot be read, the checksum is missing
-or unreadable, or the checksum is wrong. Note that prelink will break the
-checksums so it must be disabled when fipscheck is used to verify the
-integrity of fips validated libraries/executables.
-
-* return values: 0 - failure
-  1 - success
-
-int FIPSCHECK_verify_files(const char *files[])
-
-This will invoke fipscheck to verify the HMAC checksums of the files in
-the NULL terminated array of pointers. The same pitfalls which might
-cause verification errors apply as above.
-
-* return values: 0 - failure
-  1 - success
-
-int FIPSCHECK_get_binary_path(char *path, size_t pathlen)
-
-Auxiliary function - returns path pointing to the executable file which is
-being run. The path buffer must be large enough to hold the path, otherwise
-it is truncated.
-
-* return values: 0 - success
-  -1 - failure
-
-int FIPSCHECK_get_library_path(const char *libname, const char *symbolname, char *path, size_t pathlen)
-
-Auxiliary function - returns path pointing to the shared library file with
-a name libname and containing a symbol symbolname. The path buffer must be
-large enough to hold the path, otherwise it is truncated.
-
-* return values: 0 - success
-  -1 - failure
-
-int FIPSCHECK_kernel_fips_mode(void)
-
-Auxiliary function - returns the value of the kernel fips mode flag.
-
-* return values: 0 - the kernel fips mode flag is 0 or unreadable
-  1 - the kernel fips mode flag is 1
+See man 3 fipscheck.h manual page for description of the fipscheck library API. 
 
 Format of the checksum file
 ===========================

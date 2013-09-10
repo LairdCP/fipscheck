@@ -201,7 +201,7 @@ FIPSCHECK_verify_ex(const char *libname, const char *symbolname, const char *hma
 	if (rv < 0)
 		return 0;
 
-	if (!fail_if_missing && test_hmac_installed(path, hmac_suffix))
+	if (!fail_if_missing && !test_hmac_installed(path, hmac_suffix))
 		return 1;
 
 	rv = run_fipscheck_helper(hmac_suffix, files);
