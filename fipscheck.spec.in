@@ -82,6 +82,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libfipscheck.so.*
 %dir %{_libdir}/fipscheck
 %{_libdir}/fipscheck/libfipscheck.so.*.hmac
+%dir %{_sysconfdir}/prelink.conf.d
+%{_sysconfdir}/prelink.conf.d/fipscheck.conf
 
 %files devel
 %defattr(-,root,root,-)

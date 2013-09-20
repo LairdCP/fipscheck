@@ -2,7 +2,11 @@ SUBDIRS = src man
 
 ACLOCAL_AMFLAGS = -I m4
 
-EXTRA_DIST = fipscheck.spec fipscheck.spec.in
+EXTRA_DIST = fipscheck.spec fipscheck.spec.in fipscheck.conf
+
+prelinkconfdir = $(sysconfdir)/prelink.conf.d
+
+prelinkconf_DATA = fipscheck.conf
 
 fipscheck.spec: fipscheck.spec.in
 	VERSION=$$(sed '/AC_INIT/ !d; s/^.*, *//; s/).*$$//' configure.ac)
