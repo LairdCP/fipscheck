@@ -1,3 +1,6 @@
+dnl Copyright (C) 2008, 2009, 2010, 2012, 2013 Red Hat, Inc. All rights reserved.
+dnl Licensed under the license in the file COPYING
+
 AC_INIT([fipscheck],[1.4.1],[tmraz@redhat.com])
 AC_CONFIG_HEADER([config.h])
 AC_PREREQ(2.60)

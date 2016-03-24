@@ -1,4 +1,7 @@
 # Makefile.am - two binaries fipscheck and fipshmac
+# 
+# Copyright (C) 2008, 2009, 2010, 2013 Red Hat, Inc. All rights reserved.
+# Licensed under the license in the file COPYING
 
 bin_PROGRAMS = fipscheck fipshmac
 
