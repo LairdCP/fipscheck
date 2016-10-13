@@ -113,6 +113,30 @@ debug_log_stderr(void)
 	log_dest = DEBUG_LOG_STDERR;
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+
+#define HMAC_CTX_new compat_hmac_ctx_new
+static HMAC_CTX *
+compat_hmac_ctx_new()
+{
+	HMAC_CTX *ctx;
+
+	ctx = calloc(1, sizeof(*ctx));
+	if (ctx != NULL)
+		HMAC_CTX_init(ctx);
+	return ctx;
+}
+
+#define HMAC_CTX_free compat_hmac_ctx_free
+static void
+compat_hmac_ctx_free(HMAC_CTX *ctx)
+{
+	HMAC_CTX_cleanup(ctx);
+	free(ctx);
+}
+
+#endif /* OPENSSL_VERSION_NUMBER < 0x10100000L */
+
 #ifdef CALL_PRELINK
 static FILE *
 spawn_prelink(const char *path, int *prelink)
@@ -167,7 +191,7 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 	int prelink = 0;
 #endif
 	int rv = -1;
-	HMAC_CTX c;
+	HMAC_CTX *c;
 	unsigned char rbuf[READ_BUFFER_LENGTH];
 	size_t len;
 	unsigned int hlen;
@@ -179,7 +203,11 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 		}
 	}
 
-	HMAC_CTX_init(&c);
+	c = HMAC_CTX_new();
+	if (c == NULL) {
+		debug_log("Failed to allocate memory for HMAC_CTX");
+		goto end;
+	}
 
 #ifdef CALL_PRELINK
 	if (access(PATH_PRELINK, X_OK) == 0) {
@@ -198,15 +226,15 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 		goto end;
 	}
 
-	HMAC_Init(&c, hmackey, sizeof(hmackey)-1, EVP_sha256());
+	HMAC_Init(c, hmackey, sizeof(hmackey)-1, EVP_sha256());
 
 	while ((len=fread(rbuf, 1, sizeof(rbuf), f)) != 0) {
-		HMAC_Update(&c, rbuf, len);
+		HMAC_Update(c, rbuf, len);
 	}
 
 	len = sizeof(rbuf);
 	/* reuse rbuf for hmac */
-	HMAC_Final(&c, rbuf, &hlen);
+	HMAC_Final(c, rbuf, &hlen);
 
 	*buf = malloc(hlen);
 	if (*buf == NULL) {
@@ -220,7 +248,7 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 
 	rv = 0;
 end:
-	HMAC_CTX_cleanup(&c);
+	HMAC_CTX_free(c);
 
 	if (f)
 		fclose(f);
