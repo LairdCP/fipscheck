@@ -40,7 +40,7 @@ verify_hmac(const char *path, const char *hmac_suffix)
 {
 	FILE *hf = NULL;
 	char *hmacpath, *p;
-	int rv = 0;
+	int rv = 1;
 	char *hmac = NULL;
 	size_t n;
 	const char *hmacdir = PATH_HMACDIR;
@@ -85,7 +85,9 @@ verify_hmac(const char *path, const char *hmac_suffix)
 
 		if (strcmp(hex, hmac) != 0) {
 			debug_log("Hmac mismatch on file '%s'", path);
-			rv = 1;
+		} else {
+			/* checksum matched */
+			rv = 0;
 		}
 		free(buf);
 		free(hex);
