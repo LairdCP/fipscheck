@@ -2,6 +2,7 @@
 set -x
 aclocal -I m4
 autoheader
+libtoolize
 automake -a
 autoconf
 VERSION=$(sed '/AC_INIT/ !d; s/^[^[:digit:]]*//; s/[^[:digit:]]*$//' configure.ac)
