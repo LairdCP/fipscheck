@@ -93,6 +93,8 @@ verify_hmac(const char *path, const char *hmac_suffix)
 		}
 		free(buf);
 		free(hex);
+	} else {
+		debug_log("Empty or broken hmac on file '%s'", path);
 	}
 
 end:
