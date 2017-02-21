@@ -35,13 +35,15 @@
 #include "filehmac.h"
 #include "fipscheck.h"
 
+#define MAX_HMAC_LEN 1024
+
 static int
 verify_hmac(const char *path, const char *hmac_suffix)
 {
 	FILE *hf = NULL;
 	char *hmacpath, *p;
 	int rv = 1;
-	char *hmac = NULL;
+	char hmac[MAX_HMAC_LEN];
 	size_t n;
 	const char *hmacdir = PATH_HMACDIR;
 
@@ -63,7 +65,7 @@ verify_hmac(const char *path, const char *hmac_suffix)
 		hmacdir = NULL;
 	} while (hf == NULL);
 
-	if (getline(&hmac, &n, hf) > 0) {
+	if (fgets(hmac, sizeof(hmac), hf) != NULL) {
 		void *buf;
 		size_t hmaclen;
 		char *hex;
@@ -94,7 +96,6 @@ verify_hmac(const char *path, const char *hmac_suffix)
 	}
 
 end:
-	free(hmac);
 	fclose(hf);
 	return rv;
 }
