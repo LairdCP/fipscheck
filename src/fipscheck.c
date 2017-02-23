@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include "filehmac.h"
 #include "fipscheck.h"
@@ -79,6 +80,7 @@ verify_hmac(const char *path, const char *hmac_suffix)
 		}
 
 		if ((hex=bin2hex(buf, hmaclen)) == NULL) {
+			errno = 0;
 			debug_log("Cannot convert hmac to hexadecimal");
 			free(buf);
 			rv = 5;
@@ -86,6 +88,7 @@ verify_hmac(const char *path, const char *hmac_suffix)
 		}
 
 		if (strcmp(hex, hmac) != 0) {
+			errno = 0;
 			debug_log("Hmac mismatch on file '%s'", path);
 		} else {
 			/* checksum matched */

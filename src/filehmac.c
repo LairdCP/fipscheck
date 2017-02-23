@@ -1,6 +1,8 @@
 /* filehmac.c */
 /*
  * Copyright (C) 2008, 2009, 2010, 2013 Red Hat Inc. All rights reserved.
+ * Copyright (C) 2016 Andrew Cagney
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  * 
@@ -37,9 +39,20 @@
 #include <syslog.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+
+#if defined(WITH_OPENSSL)
 #include <openssl/fips.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
+#elif defined(WITH_NSS)
+#include <nss.h>
+#include <sechash.h>
+#include <alghmac.h>
+#include <pk11pub.h>
+#include <secmod.h>
+#else
+#error "no crypto library defined"
+#endif
 
 #include "filehmac.h"
 
@@ -113,7 +126,7 @@ debug_log_stderr(void)
 	log_dest = DEBUG_LOG_STDERR;
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if defined(WITH_OPENSSL) && OPENSSL_VERSION_NUMBER < 0x10100000L
 
 #define HMAC_CTX_new compat_hmac_ctx_new
 static HMAC_CTX *
@@ -191,22 +204,55 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 	int prelink = 0;
 #endif
 	int rv = -1;
-	HMAC_CTX *c;
+#if defined(WITH_OPENSSL)
+	HMAC_CTX *c = NULL;
+#elif defined(WITH_NSS)
+	HMACContext *c = NULL;
+	const SECHashObject *hash;
+#endif
 	unsigned char rbuf[READ_BUFFER_LENGTH];
 	size_t len;
 	unsigned int hlen;
 
-	if (force_fips && !FIPS_mode()) {
-		if (!FIPS_mode_set(1)) {
-			debug_log("FIPS_mode_set() failed");
-			return -1;
-		}
+#if defined(WITH_NSS)
+	/*
+	 * While, technically, NSS_NoDB_Init() is idenpotent, perform
+	 * an explicit test.
+	 */
+	if (!NSS_IsInitialized()) {
+		NSS_NoDB_Init(".");
 	}
+#endif
 
-	c = HMAC_CTX_new();
-	if (c == NULL) {
-		debug_log("Failed to allocate memory for HMAC_CTX");
-		goto end;
+	if (force_fips) {
+#if defined(WITH_OPENSSL)
+		if (!FIPS_mode()) {
+			if (!FIPS_mode_set(1)) {
+				debug_log("FIPS_mode_set() failed");
+				return -1;
+			}
+		}
+#elif defined(WITH_NSS)
+		if (!PK11_IsFIPS()) {
+			SECMODModule *internal = SECMOD_GetInternalModule();
+			if (internal == NULL) {
+				errno = 0;
+				debug_log("SECMOD_GetInternalModule() failed");
+				return -1;
+			}
+			if (SECMOD_DeleteInternalModule(internal->commonName) != SECSuccess) {
+				errno = 0;
+				debug_log("SECMOD_DeleteInternalModule(%s) failed",
+						     internal->commonName);
+				return -1;
+			}
+			if (!PK11_IsFIPS()) {
+				errno = 0;
+				debug_log("NSS FIPS mode toggle failed");
+				return -1;
+			}
+		}
+#endif
 	}
 
 #ifdef CALL_PRELINK
@@ -226,7 +272,30 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 		goto end;
 	}
 
+#if defined(WITH_OPENSSL)
+	c = HMAC_CTX_new();
+	if (c == NULL) {
+		debug_log("Failed to allocate memory for HMAC_CTX");
+		goto end;
+	}
 	HMAC_Init(c, hmackey, sizeof(hmackey)-1, EVP_sha256());
+#elif defined(WITH_NSS)
+	errno = 0;
+	hash = HASH_GetHashObject(HASH_AlgSHA256);
+	if (hash == NULL) {
+		errno = 0;
+		debug_log("HASH_GetHashObject(HASH_AlgSHA256) failed");
+		goto end;
+	}
+	c = HMAC_Create(hash, hmackey, sizeof(hmackey) - 1,
+			force_fips ? PR_TRUE : PR_FALSE);
+	if (c == NULL) {
+		errno = 0;
+		debug_log("HMAC_Create() failed");
+		goto end;
+	}
+	HMAC_Begin(c);
+#endif
 
 	while ((len=fread(rbuf, 1, sizeof(rbuf), f)) != 0) {
 		HMAC_Update(c, rbuf, len);
@@ -234,7 +303,11 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 
 	len = sizeof(rbuf);
 	/* reuse rbuf for hmac */
+#if defined(WITH_OPENSSL)
 	HMAC_Final(c, rbuf, &hlen);
+#elif defined(WITH_NSS)
+	HMAC_Finish(c, rbuf, &hlen, sizeof(rbuf) - 1);
+#endif
 
 	*buf = malloc(hlen);
 	if (*buf == NULL) {
@@ -248,7 +321,13 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 
 	rv = 0;
 end:
+#if defined(WITH_OPENSSL)
 	HMAC_CTX_free(c);
+#elif defined(WITH_NSS)
+	if (c != NULL) {
+		HMAC_Destroy(c, PR_TRUE);
+	}
+#endif
 
 	if (f)
 		fclose(f);

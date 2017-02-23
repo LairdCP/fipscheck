@@ -1,5 +1,29 @@
-dnl Copyright (C) 2008, 2009, 2010, 2012, 2013 Red Hat, Inc. All rights reserved.
-dnl Licensed under the license in the file COPYING
+# Copyright (C) 2008, 2009, 2010, 2012, 2013 Red Hat, Inc. All rights reserved.
+# Copyright (C) 2016 Andrew Cagney
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY RED HAT, INC. ''AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+# EVENT SHALL THE FREEBSD PROJECT OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+# INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+# OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# 
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of Red Hat, Inc.
 
 AC_INIT([fipscheck],[1.4.1],[tmraz@redhat.com])
 AC_CONFIG_HEADER([config.h])
@@ -12,6 +36,8 @@ dnl Check for _GNU_SOURCE
 AC_USE_SYSTEM_EXTENSIONS
 
 AM_PROG_LIBTOOL
+
+PKG_PROG_PKG_CONFIG()
 
 dnl Checks for programs.
 
@@ -52,15 +78,34 @@ dnl Checks for the existence of libdl - on BSD and Tru64 its part of libc
 AC_CHECK_LIB([dl], [dlopen], LIBDL="-ldl", LIBDL="")
 AC_SUBST(LIBDL)
 
-dnl Checks for the existence of OpenSSL with FIPS mode
-AC_CHECK_LIB([crypto], [FIPS_mode],
-[
-	LIBCRYPTO=-lcrypto
-],
-[
-	AC_MSG_ERROR([OpenSSL library with FIPS mode support is required])
-])
-AC_SUBST(LIBCRYPTO)
+
+dnl This isn't a strictly correct use of --with, OTOH it is better
+dnl than having separate and conflicting --with-nss and --with-openssl
+dnl options.  Rather than be "smart" and guess the crypto library
+dnl based on what is installed, this logic simply barfs on an error.
+
+AC_ARG_WITH([crypto],
+            [AS_HELP_STRING([--with-crypto],
+	                    [specify the crypto library to use when computing the HMAC, OpenSSL (the default) and NSS are supported])],
+            [],
+            [with_crypto=openssl])
+
+dnl Check for the existence of the slected crypto library with FIPS mode
+AS_CASE($with_crypto,
+    [openssl|ssl], [
+        AC_DEFINE([WITH_OPENSSL], [1], [use HMAC from the OpenSSL crypto library])
+        AC_CHECK_LIB([crypto], [FIPS_mode], [CRYPTO_LIBS=-lcrypto],
+                     [AC_MSG_ERROR([OpenSSL library with FIPS mode support is required])])
+	],
+    [nss], [
+	PKG_CHECK_MODULES([CRYPTO],[nss],[],[AC_MSG_ERROR([NSS library with FIPS mode support is required])])
+	CRYPTO_LIBS="$CRYPTO_LIBS -lfreebl"
+        AC_DEFINE([WITH_NSS], [1], [use HMAC from the NSS crypto library])
+	],
+    [AC_MSG_ERROR([The --with-crypto library "$with_crypto" is not known])])
+
+AC_SUBST(CRYPTO_LIBS)
+AC_SUBST(CRYPTO_CFLAGS)
 
 AC_MSG_CHECKING(sysconfdir)
 AC_ARG_WITH(sysconfdir,
