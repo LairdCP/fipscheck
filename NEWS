@@ -1,0 +1,6 @@
+fipscheck 1.5.0
+---------------
+* Added possibility to build against Mozilla NSS via configure option
+  --with-crypto=nss
+  Original patch written by Andrew Cagney.
+* Fixed handling of empty hmac files.

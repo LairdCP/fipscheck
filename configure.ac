@@ -25,7 +25,7 @@
 # of the authors and should not be interpreted as representing official policies,
 # either expressed or implied, of Red Hat, Inc.
 
-AC_INIT([fipscheck],[1.4.1],[tmraz@redhat.com])
+AC_INIT([fipscheck],[1.5.0],[tmraz@redhat.com])
 AC_CONFIG_HEADER([config.h])
 AC_PREREQ(2.60)
 
