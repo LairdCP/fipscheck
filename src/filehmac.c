@@ -41,8 +41,6 @@
 #include <sys/wait.h>
 
 #if defined(WITH_OPENSSL)
-#include <openssl/fips.h>
-#include <openssl/evp.h>
 #include <openssl/hmac.h>
 #elif defined(WITH_NSS)
 #include <nss.h>
