@@ -32,6 +32,15 @@ AC_PREREQ(2.60)
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 
+AC_ARG_ENABLE([docs],
+    AS_HELP_STRING([--enable-docs], [Enable man genereation @<:@default=yes@:>@]),
+    [case "${enableval}" in
+        yes) enable_docs=true ;;
+        no)  enable_docs=false ;;
+        *) AC_MSG_ERROR([bad value ${enableval} for --enable-docs]) ;;
+     esac],[enable_docs=true])
+AM_CONDITIONAL([ENABLE_DOCS], [test x$enable_docs = xtrue])
+
 dnl Check for _GNU_SOURCE
 AC_USE_SYSTEM_EXTENSIONS
 

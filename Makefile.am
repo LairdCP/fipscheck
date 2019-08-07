@@ -1,4 +1,8 @@
-SUBDIRS = src man
+SUBDIRS = src
+
+if ENABLE_DOCS
+	SUBDIRS += man
+endif
 
 ACLOCAL_AMFLAGS = -I m4
 
