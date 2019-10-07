@@ -43,21 +43,14 @@ create_hmac(const char *path, const char *destdir, const char *hmac_suffix)
 	int rv = 0;
 	char *hmac = NULL;
 	size_t hmaclen;
-	void *buf;
-	char *hex;
+	void *buf = NULL;
+	char *hex = NULL;
 
 	hmacpath = make_hmac_path(path, destdir, hmac_suffix);
 
 	if (hmacpath == NULL) {
 		debug_log("Cannot make hmac path");
 		return 5;
-	}
-
-	hf = fopen(hmacpath, "w");
-	if (hf == NULL) {
-		debug_log("Cannot open hmac file '%s'", hmacpath);
-		free(hmacpath);
-		return 3;
 	}
 
 	if (compute_file_hmac(path, &buf, &hmaclen, 0) < 0) {
@@ -67,8 +60,14 @@ create_hmac(const char *path, const char *destdir, const char *hmac_suffix)
 
 	if ((hex=bin2hex(buf, hmaclen)) == NULL) {
 		debug_log("Cannot convert hmac to hexadecimal");
-		free(buf);
 		rv = 5;
+		goto end;
+	}
+
+	hf = fopen(hmacpath, "w");
+	if (hf == NULL) {
+		debug_log("Cannot open hmac file '%s'", hmacpath);
+		rv = 3;
 		goto end;
 	}
 
@@ -77,15 +76,16 @@ create_hmac(const char *path, const char *destdir, const char *hmac_suffix)
 		rv = 6;
 	}
 
-	free(buf);
-	free(hex);
-
-end:
-	free(hmac);
 	if (fclose(hf) != 0) {
 		debug_log("Failure during closing hmac file '%s'", hmacpath);
 		rv = 7;
 	}
+
+end:
+	free(buf);
+	free(hex);
+	free(hmac);
+
 	if (rv != 0) {
 		unlink(hmacpath);
 	}

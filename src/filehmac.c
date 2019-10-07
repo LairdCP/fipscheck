@@ -319,13 +319,13 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 
 	rv = 0;
 end:
-#if defined(WITH_OPENSSL)
-	HMAC_CTX_free(c);
-#elif defined(WITH_NSS)
 	if (c != NULL) {
+#if defined(WITH_OPENSSL)
+		HMAC_CTX_free(c);
+#elif defined(WITH_NSS)
 		HMAC_Destroy(c, PR_TRUE);
-	}
 #endif
+	}
 
 	if (f)
 		fclose(f);
