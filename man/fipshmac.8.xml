@@ -57,7 +57,7 @@ fipscheck can return the following return codes:
 <para>
 <citerefentry> <refentrytitle>fipscheck</refentrytitle> <manvolnum>8</manvolnum></citerefentry>,
 <citerefentry> <refentrytitle>fipscheck.h</refentrytitle> <manvolnum>3</manvolnum></citerefentry>,
-<ulink url='https://fedorahosted.org/fipscheck/'>https://fedorahosted.org/fipscheck/</ulink>
+<ulink url='https://github.com/LairdCP/fipscheck/'>https://github.com/LairdCP/fipscheck/</ulink>
 </para>
 </refsect1>
 
