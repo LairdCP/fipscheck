@@ -3,13 +3,13 @@
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # 1. Redistributions of source code must retain the above copyright notice,
 # this list of conditions and the following disclaimer.
 # 2. Redistributions in binary form must reproduce the above copyright notice,
 # this list of conditions and the following disclaimer in the documentation
 # and/or other materials provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY RED HAT, INC. ''AS IS'' AND ANY EXPRESS OR
 # IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 # MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
@@ -20,12 +20,12 @@
 # LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 # OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and documentation are those
 # of the authors and should not be interpreted as representing official policies,
 # either expressed or implied, of Red Hat, Inc.
 
-AC_INIT([fipscheck],[1.5.0],[tmraz@redhat.com])
+AC_INIT([fipscheck],[1.6.0],[support@lairdconnect.com])
 AC_CONFIG_HEADER([config.h])
 AC_PREREQ(2.60)
 
@@ -45,6 +45,9 @@ dnl Check for _GNU_SOURCE
 AC_USE_SYSTEM_EXTENSIONS
 
 AM_PROG_LIBTOOL
+
+_LT_TAGVAR(hardcode_libdir_flag_spec, )=""
+_LT_TAGVAR(hardcode_minus_L, )=yes
 
 PKG_PROG_PKG_CONFIG()
 
@@ -83,12 +86,11 @@ AC_TYPE_PID_T
 AC_TYPE_SIZE_T
 AC_STRUCT_TM
 
-dnl Checks for the existence of libdl - on BSD and Tru64 its part of libc 
+dnl Checks for the existence of libdl - on BSD and Tru64 its part of libc
 AC_CHECK_LIB([dl], [dlopen], LIBDL="-ldl", LIBDL="")
 AC_SUBST(LIBDL)
 
-
-dnl This isn't a strictly correct use of --with, OTOH it is better
+dnl This is not a strictly correct use of --with, OTOH it is better
 dnl than having separate and conflicting --with-nss and --with-openssl
 dnl options.  Rather than be "smart" and guess the crypto library
 dnl based on what is installed, this logic simply barfs on an error.

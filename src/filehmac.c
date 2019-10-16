@@ -276,7 +276,7 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 		debug_log("Failed to allocate memory for HMAC_CTX");
 		goto end;
 	}
-	HMAC_Init(c, hmackey, sizeof(hmackey)-1, EVP_sha256());
+	HMAC_Init_ex(c, hmackey, sizeof(hmackey)-1, EVP_sha256(), NULL);
 #elif defined(WITH_NSS)
 	errno = 0;
 	hash = HASH_GetHashObject(HASH_AlgSHA256);
