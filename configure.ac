@@ -26,8 +26,8 @@
 # either expressed or implied, of Red Hat, Inc.
 
 AC_INIT([fipscheck],[1.6.0],[support@lairdconnect.com])
-AC_CONFIG_HEADER([config.h])
-AC_PREREQ(2.60)
+AC_CONFIG_HEADERS([config.h])
+AC_PREREQ([2.69])
 
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
@@ -44,7 +44,7 @@ AM_CONDITIONAL([ENABLE_DOCS], [test x$enable_docs = xtrue])
 dnl Check for _GNU_SOURCE
 AC_USE_SYSTEM_EXTENSIONS
 
-AM_PROG_LIBTOOL
+LT_INIT([disable-static])
 
 _LT_TAGVAR(hardcode_libdir_flag_spec, )=""
 _LT_TAGVAR(hardcode_minus_L, )=yes
@@ -78,7 +78,6 @@ AC_CHECK_FUNCS( \
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
-AC_TYPE_SIGNAL
 AC_TYPE_UID_T
 AC_TYPE_MODE_T
 AC_TYPE_OFF_T
