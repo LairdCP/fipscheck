@@ -25,7 +25,7 @@
 # of the authors and should not be interpreted as representing official policies,
 # either expressed or implied, of Red Hat, Inc.
 
-AC_INIT([fipscheck],[1.6.0],[support@lairdconnect.com])
+AC_INIT([fipscheck],[1.7.0],[support@lairdconnect.com])
 AC_CONFIG_HEADERS([config.h])
 AC_PREREQ([2.69])
 
@@ -103,13 +103,13 @@ AC_ARG_WITH([crypto],
 dnl Check for the existence of the slected crypto library with FIPS mode
 AS_CASE($with_crypto,
     [openssl|ssl], [
+	      PKG_CHECK_MODULES([CRYPTO],[libcrypto],[],[AC_MSG_ERROR([OpenSSL library with FIPS mode support is required])])
+        CRYPTO_LIBS=-lcrypto
         AC_DEFINE([WITH_OPENSSL], [1], [use HMAC from the OpenSSL crypto library])
-        AC_CHECK_LIB([crypto], [FIPS_mode], [CRYPTO_LIBS=-lcrypto],
-                     [AC_MSG_ERROR([OpenSSL library with FIPS mode support is required])])
 	],
     [nss], [
-	PKG_CHECK_MODULES([CRYPTO],[nss],[],[AC_MSG_ERROR([NSS library with FIPS mode support is required])])
-	CRYPTO_LIBS="$CRYPTO_LIBS -lfreebl"
+	      PKG_CHECK_MODULES([CRYPTO],[nss],[],[AC_MSG_ERROR([NSS library with FIPS mode support is required])])
+	      CRYPTO_LIBS="$CRYPTO_LIBS -lfreebl"
         AC_DEFINE([WITH_NSS], [1], [use HMAC from the NSS crypto library])
 	],
     [AC_MSG_ERROR([The --with-crypto library "$with_crypto" is not known])])
