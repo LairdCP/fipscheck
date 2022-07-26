@@ -36,6 +36,13 @@
 #include "filehmac.h"
 #include "fipscheck.h"
 
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/provider.h>
+
+static OSSL_PROVIDER *fips;
+#endif
+
+
 #define MAX_HMAC_LEN 1024
 
 static int
@@ -127,17 +134,28 @@ main(int argc, char *argv[])
 		return 10;
 	}
 
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+	fips = OSSL_PROVIDER_load(NULL, "fips");
+	if (fips == NULL) {
+		debug_log("Failed to load FIPS provider\n");
+		return -1;
+	}
+#endif
+
 	if ((rv=verify_hmac(buf, NULL)) != 0) {
-		return rv+10;
+		rv += 10;
+		goto exit;
 	}
 
 	if (FIPSCHECK_get_binary_path(buf, sizeof(buf)) != 0) {
 		debug_log("FIPSCHECK_get_binary_path() failed");
-		return 20;
+		rv = 20;
+		goto exit;
 	}
 
 	if ((rv=verify_hmac(buf, NULL)) != 0) {
-		return rv+20;
+		rv += 20;
+		goto exit;
 	}
 
 	for (i = 1; i < argc; i++) {
@@ -145,7 +163,8 @@ main(int argc, char *argv[])
 			i++;
 			if (i >= argc) {
 				fprintf(stderr, "Missing argument of the -s option\n");
-				return 2;
+				rv = 2;
+				goto exit;
 			}
 			hmac_suffix = argv[i];
 		}
@@ -158,9 +177,14 @@ main(int argc, char *argv[])
 		}
 		rv = verify_hmac(argv[i], hmac_suffix);
 		if (rv != 0) {
-			return rv;
+			goto exit;
 		}
 	}
+
+exit:
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+	OSSL_PROVIDER_unload(fips);
+#endif
 
 	return 0;
 }

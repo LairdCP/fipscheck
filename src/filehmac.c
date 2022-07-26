@@ -5,13 +5,13 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  * this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  * this list of conditions and the following disclaimer in the documentation
  * and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY RED HAT, INC. ''AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
@@ -22,7 +22,7 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  * The views and conclusions contained in the software and documentation are those
  * of the authors and should not be interpreted as representing official policies,
  * either expressed or implied, of Red Hat, Inc.
@@ -41,7 +41,11 @@
 #include <sys/wait.h>
 
 #if defined(WITH_OPENSSL)
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/evp.h>
+#else
 #include <openssl/hmac.h>
+#endif
 #elif defined(WITH_NSS)
 #include <nss.h>
 #include <sechash.h>
@@ -165,7 +169,7 @@ spawn_prelink(const char *path, int *prelink)
 	child = fork();
 
 	if (child == 0) {
-		char * args[] = { NULL, NULL, NULL, NULL };
+		char *args[] = { NULL, NULL, NULL, NULL };
 
 		args[0] = PATH_PRELINK;
 		args[1] = "--verify";
@@ -173,7 +177,7 @@ spawn_prelink(const char *path, int *prelink)
 
 		close(fds[0]);
 		if (dup2(fds[1], STDOUT_FILENO) == -1) {
-		    exit(126);
+			exit(126);
 		}
 
 		execv(PATH_PRELINK, args);
@@ -181,7 +185,7 @@ spawn_prelink(const char *path, int *prelink)
 		exit(127);
 	} else if (child > 0) {
 		*prelink = child;
-		
+
 		close(fds[1]);
 		rpipe = fdopen(fds[0], "r");
 		return rpipe;
@@ -198,71 +202,23 @@ int
 compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 {
 	FILE *f = NULL;
-#ifdef CALL_PRELINK
-	int prelink = 0;
-#endif
 	int rv = -1;
-#if defined(WITH_OPENSSL)
-	HMAC_CTX *c = NULL;
-#elif defined(WITH_NSS)
-	HMACContext *c = NULL;
-	const SECHashObject *hash;
-#endif
 	unsigned char rbuf[READ_BUFFER_LENGTH];
 	size_t len;
 	unsigned int hlen;
 
-#if defined(WITH_NSS)
-	/*
-	 * While, technically, NSS_NoDB_Init() is idenpotent, perform
-	 * an explicit test.
-	 */
-	if (!NSS_IsInitialized()) {
-		NSS_NoDB_Init(".");
-	}
-#endif
-
-	if (force_fips) {
-#if defined(WITH_OPENSSL)
-		if (!FIPS_mode()) {
-			if (!FIPS_mode_set(1)) {
-				debug_log("FIPS_mode_set() failed");
-				return -1;
-			}
-		}
-#elif defined(WITH_NSS)
-		if (!PK11_IsFIPS()) {
-			SECMODModule *internal = SECMOD_GetInternalModule();
-			if (internal == NULL) {
-				errno = 0;
-				debug_log("SECMOD_GetInternalModule() failed");
-				return -1;
-			}
-			if (SECMOD_DeleteInternalModule(internal->commonName) != SECSuccess) {
-				errno = 0;
-				debug_log("SECMOD_DeleteInternalModule(%s) failed",
-						     internal->commonName);
-				return -1;
-			}
-			if (!PK11_IsFIPS()) {
-				errno = 0;
-				debug_log("NSS FIPS mode toggle failed");
-				return -1;
-			}
-		}
-#endif
-	}
-
 #ifdef CALL_PRELINK
+	int prelink = 0;
+
 	if (access(PATH_PRELINK, X_OK) == 0) {
 		f = spawn_prelink(path, &prelink);
 	}
 
 	if (!prelink && f == NULL) {
-#endif
 		f = fopen(path, "r");
-#ifdef CALL_PRELINK
 	}
+#else
+	f = fopen(path, "r");
 #endif
 
 	if (f == NULL) {
@@ -270,41 +226,103 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 		goto end;
 	}
 
-#if defined(WITH_OPENSSL)
-	c = HMAC_CTX_new();
+#if defined(WITH_OPENSSL) && OPENSSL_VERSION_NUMBER >= 0x30000000L
+	EVP_MAC *mac = EVP_MAC_fetch(NULL, "HMAC", force_fips ? "provider=fips" : NULL);
+	if (mac == NULL) {
+		debug_log("Failed to allocate memory for HMAC");
+		goto end;
+	}
+
+	EVP_MAC_CTX *c = EVP_MAC_CTX_new(mac);
 	if (c == NULL) {
 		debug_log("Failed to allocate memory for HMAC_CTX");
 		goto end;
 	}
-	HMAC_Init_ex(c, hmackey, sizeof(hmackey)-1, EVP_sha256(), NULL);
+
+	EVP_MAC_free(mac);
+
+	OSSL_PARAM params[2];
+	params[0] = OSSL_PARAM_construct_utf8_string("digest", "SHA256", 0);
+	params[1] = OSSL_PARAM_construct_end();
+
+	EVP_MAC_init(c, hmackey, sizeof(hmackey) - 1, params);
+
+	while ((len = fread(rbuf, 1, sizeof(rbuf), f)) != 0)
+		EVP_MAC_update(c, rbuf, len);
+
+	EVP_MAC_final(c, rbuf, &hlen, sizeof(rbuf));
+	EVP_MAC_CTX_free(c);
+#elif defined(WITH_OPENSSL) && OPENSSL_VERSION_NUMBER < 0x30000000L
+	if (force_fips && !FIPS_mode()) {
+		if (!FIPS_mode_set(1)) {
+			debug_log("FIPS_mode_set() failed");
+			goto end;
+		}
+	}
+
+	HMAC_CTX *c = HMAC_CTX_new();
+	if (c == NULL) {
+		debug_log("Failed to allocate memory for HMAC_CTX");
+		goto end;
+	}
+	HMAC_Init_ex(c, hmackey, sizeof(hmackey) - 1, EVP_sha256(), NULL);
+
+	while ((len = fread(rbuf, 1, sizeof(rbuf), f)) != 0)
+		HMAC_Update(c, rbuf, len);
+
+	HMAC_Final(c, rbuf, &hlen);
+	HMAC_CTX_free(c);
 #elif defined(WITH_NSS)
+	/*
+	 * While, technically, NSS_NoDB_Init() is idempotent, perform
+	 * an explicit test.
+	 */
+	if (!NSS_IsInitialized()) {
+		NSS_NoDB_Init(".");
+	}
+
+	if (force_fips && !PK11_IsFIPS()) {
+		SECMODModule *internal = SECMOD_GetInternalModule();
+		if (internal == NULL) {
+			errno = 0;
+			debug_log("SECMOD_GetInternalModule() failed");
+			goto end;
+		}
+		if (SECMOD_DeleteInternalModule(internal->commonName) != SECSuccess) {
+			errno = 0;
+			debug_log("SECMOD_DeleteInternalModule(%s) failed",
+				  internal->commonName);
+			goto end;
+		}
+		if (!PK11_IsFIPS()) {
+			errno = 0;
+			debug_log("NSS FIPS mode toggle failed");
+			goto end;
+		}
+	}
+
 	errno = 0;
-	hash = HASH_GetHashObject(HASH_AlgSHA256);
+	const SECHashObject *hash = HASH_GetHashObject(HASH_AlgSHA256);
 	if (hash == NULL) {
 		errno = 0;
 		debug_log("HASH_GetHashObject(HASH_AlgSHA256) failed");
 		goto end;
 	}
-	c = HMAC_Create(hash, hmackey, sizeof(hmackey) - 1,
-			force_fips ? PR_TRUE : PR_FALSE);
+	HMACContext *c = HMAC_Create(hash, hmackey, sizeof(hmackey) - 1,
+				     force_fips ? PR_TRUE : PR_FALSE);
 	if (c == NULL) {
 		errno = 0;
 		debug_log("HMAC_Create() failed");
 		goto end;
 	}
 	HMAC_Begin(c);
-#endif
 
-	while ((len=fread(rbuf, 1, sizeof(rbuf), f)) != 0) {
+	while ((len = fread(rbuf, 1, sizeof(rbuf), f)) != 0)
 		HMAC_Update(c, rbuf, len);
-	}
 
-	len = sizeof(rbuf);
-	/* reuse rbuf for hmac */
-#if defined(WITH_OPENSSL)
-	HMAC_Final(c, rbuf, &hlen);
-#elif defined(WITH_NSS)
 	HMAC_Finish(c, rbuf, &hlen, sizeof(rbuf) - 1);
+
+	HMAC_Destroy(c, PR_TRUE);
 #endif
 
 	*buf = malloc(hlen);
@@ -319,13 +337,6 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 
 	rv = 0;
 end:
-	if (c != NULL) {
-#if defined(WITH_OPENSSL)
-		HMAC_CTX_free(c);
-#elif defined(WITH_NSS)
-		HMAC_Destroy(c, PR_TRUE);
-#endif
-	}
 
 	if (f)
 		fclose(f);
@@ -335,8 +346,8 @@ end:
 		int ret;
 		int status;
 
-		while ((ret=waitpid(prelink, &status, 0)) == -1 &&   /* wait for prelink to complete */
-			errno == EINTR);
+		while ((ret = waitpid(prelink, &status, 0)) == -1 &&   /* wait for prelink to complete */
+		       errno == EINTR);
 		if (ret <= 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
 			debug_log("prelink failed");
 			rv = -1;
@@ -354,7 +365,7 @@ bin2hex(void *buf, size_t len)
 {
 	char *hex, *p;
 	unsigned char *src = buf;
-	
+
 	hex = malloc(len * 2 + 1);
 	if (hex == NULL)
 		return NULL;
