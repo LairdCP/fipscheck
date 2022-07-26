@@ -42,6 +42,7 @@
 
 #if defined(WITH_OPENSSL)
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/provider.h>
 #include <openssl/evp.h>
 #else
 #include <openssl/hmac.h>
@@ -198,18 +199,31 @@ spawn_prelink(const char *path, int *prelink)
 }
 #endif
 
+#if defined(WITH_OPENSSL) && OPENSSL_VERSION_NUMBER >= 0x30000000L
 int
 compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 {
+	static OSSL_PROVIDER *fips = NULL;
 	FILE *f = NULL;
+
+#ifdef CALL_PRELINK
+	int prelink = 0;
+#endif
 	int rv = -1;
+	OSSL_PARAM params[2];
 	unsigned char rbuf[READ_BUFFER_LENGTH];
 	size_t len;
 	unsigned int hlen;
 
-#ifdef CALL_PRELINK
-	int prelink = 0;
+	if (force_fips && fips != NULL) {
+		fips = OSSL_PROVIDER_load(NULL, "fips");
+		if (fips == NULL) {
+			debug_log("Failed to load FIPS provider\n");
+			return -1;
+		}
+	}
 
+#ifdef CALL_PRELINK
 	if (access(PATH_PRELINK, X_OK) == 0) {
 		f = spawn_prelink(path, &prelink);
 	}
@@ -226,7 +240,6 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 		goto end;
 	}
 
-#if defined(WITH_OPENSSL) && OPENSSL_VERSION_NUMBER >= 0x30000000L
 	EVP_MAC *mac = EVP_MAC_fetch(NULL, "HMAC", force_fips ? "provider=fips" : NULL);
 	if (mac == NULL) {
 		debug_log("Failed to allocate memory for HMAC");
@@ -241,7 +254,6 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 
 	EVP_MAC_free(mac);
 
-	OSSL_PARAM params[2];
 	params[0] = OSSL_PARAM_construct_utf8_string("digest", "SHA256", 0);
 	params[1] = OSSL_PARAM_construct_end();
 
@@ -252,27 +264,60 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 
 	EVP_MAC_final(c, rbuf, &hlen, sizeof(rbuf));
 	EVP_MAC_CTX_free(c);
-#elif defined(WITH_OPENSSL) && OPENSSL_VERSION_NUMBER < 0x30000000L
-	if (force_fips && !FIPS_mode()) {
-		if (!FIPS_mode_set(1)) {
-			debug_log("FIPS_mode_set() failed");
-			goto end;
-		}
-	}
 
-	HMAC_CTX *c = HMAC_CTX_new();
-	if (c == NULL) {
-		debug_log("Failed to allocate memory for HMAC_CTX");
+	*buf = malloc(hlen);
+	if (*buf == NULL) {
+		debug_log("Failed to allocate memory");
 		goto end;
 	}
-	HMAC_Init_ex(c, hmackey, sizeof(hmackey) - 1, EVP_sha256(), NULL);
 
-	while ((len = fread(rbuf, 1, sizeof(rbuf), f)) != 0)
-		HMAC_Update(c, rbuf, len);
+	*hmaclen = hlen;
 
-	HMAC_Final(c, rbuf, &hlen);
-	HMAC_CTX_free(c);
+	memcpy(*buf, rbuf, hlen);
+
+	rv = 0;
+
+end:
+	if (f)
+		fclose(f);
+
+#ifdef CALL_PRELINK
+	if (prelink) {
+		int ret;
+		int status;
+
+		while ((ret = waitpid(prelink, &status, 0)) == -1 &&   /* wait for prelink to complete */
+		       errno == EINTR);
+		if (ret <= 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+			debug_log("prelink failed");
+			rv = -1;
+		}
+	}
+#endif
+
+	return rv;
+}
+#else
+int
+compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
+{
+	FILE *f = NULL;
+
+#ifdef CALL_PRELINK
+	int prelink = 0;
+#endif
+	int rv = -1;
+#if defined(WITH_OPENSSL)
+	HMAC_CTX *c = NULL;
 #elif defined(WITH_NSS)
+	HMACContext *c = NULL;
+	const SECHashObject *hash;
+#endif
+	unsigned char rbuf[READ_BUFFER_LENGTH];
+	size_t len;
+	unsigned int hlen;
+
+#if defined(WITH_NSS)
 	/*
 	 * While, technically, NSS_NoDB_Init() is idempotent, perform
 	 * an explicit test.
@@ -280,49 +325,90 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 	if (!NSS_IsInitialized()) {
 		NSS_NoDB_Init(".");
 	}
+#endif
 
-	if (force_fips && !PK11_IsFIPS()) {
-		SECMODModule *internal = SECMOD_GetInternalModule();
-		if (internal == NULL) {
-			errno = 0;
-			debug_log("SECMOD_GetInternalModule() failed");
-			goto end;
+	if (force_fips) {
+#if defined(WITH_OPENSSL)
+		if (!FIPS_mode()) {
+			if (!FIPS_mode_set(1)) {
+				debug_log("FIPS_mode_set() failed");
+				return -1;
+			}
 		}
-		if (SECMOD_DeleteInternalModule(internal->commonName) != SECSuccess) {
-			errno = 0;
-			debug_log("SECMOD_DeleteInternalModule(%s) failed",
-				  internal->commonName);
-			goto end;
-		}
+#elif defined(WITH_NSS)
 		if (!PK11_IsFIPS()) {
-			errno = 0;
-			debug_log("NSS FIPS mode toggle failed");
-			goto end;
+			SECMODModule *internal = SECMOD_GetInternalModule();
+			if (internal == NULL) {
+				errno = 0;
+				debug_log("SECMOD_GetInternalModule() failed");
+				return -1;
+			}
+			if (SECMOD_DeleteInternalModule(internal->commonName) != SECSuccess) {
+				errno = 0;
+				debug_log("SECMOD_DeleteInternalModule(%s) failed",
+					  internal->commonName);
+				return -1;
+			}
+			if (!PK11_IsFIPS()) {
+				errno = 0;
+				debug_log("NSS FIPS mode toggle failed");
+				return -1;
+			}
 		}
+#endif
 	}
 
+#ifdef CALL_PRELINK
+	if (access(PATH_PRELINK, X_OK) == 0) {
+		f = spawn_prelink(path, &prelink);
+	}
+
+	if (!prelink && f == NULL) {
+#endif
+	f = fopen(path, "r");
+#ifdef CALL_PRELINK
+}
+#endif
+
+	if (f == NULL) {
+		debug_log("Failed to open '%s'", path);
+		goto end;
+	}
+
+#if defined(WITH_OPENSSL)
+	c = HMAC_CTX_new();
+	if (c == NULL) {
+		debug_log("Failed to allocate memory for HMAC_CTX");
+		goto end;
+	}
+	HMAC_Init_ex(c, hmackey, sizeof(hmackey) - 1, EVP_sha256(), NULL);
+#elif defined(WITH_NSS)
 	errno = 0;
-	const SECHashObject *hash = HASH_GetHashObject(HASH_AlgSHA256);
+	hash = HASH_GetHashObject(HASH_AlgSHA256);
 	if (hash == NULL) {
 		errno = 0;
 		debug_log("HASH_GetHashObject(HASH_AlgSHA256) failed");
 		goto end;
 	}
-	HMACContext *c = HMAC_Create(hash, hmackey, sizeof(hmackey) - 1,
-				     force_fips ? PR_TRUE : PR_FALSE);
+	c = HMAC_Create(hash, hmackey, sizeof(hmackey) - 1,
+			force_fips ? PR_TRUE : PR_FALSE);
 	if (c == NULL) {
 		errno = 0;
 		debug_log("HMAC_Create() failed");
 		goto end;
 	}
 	HMAC_Begin(c);
+#endif
 
 	while ((len = fread(rbuf, 1, sizeof(rbuf), f)) != 0)
 		HMAC_Update(c, rbuf, len);
 
+	len = sizeof(rbuf);
+	/* reuse rbuf for hmac */
+#if defined(WITH_OPENSSL)
+	HMAC_Final(c, rbuf, &hlen);
+#elif defined(WITH_NSS)
 	HMAC_Finish(c, rbuf, &hlen, sizeof(rbuf) - 1);
-
-	HMAC_Destroy(c, PR_TRUE);
 #endif
 
 	*buf = malloc(hlen);
@@ -337,6 +423,13 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 
 	rv = 0;
 end:
+	if (c != NULL) {
+#if defined(WITH_OPENSSL)
+		HMAC_CTX_free(c);
+#elif defined(WITH_NSS)
+		HMAC_Destroy(c, PR_TRUE);
+#endif
+	}
 
 	if (f)
 		fclose(f);
@@ -357,6 +450,7 @@ end:
 
 	return rv;
 }
+#endif
 
 static const char conv[] = "0123456789abcdef";
 
