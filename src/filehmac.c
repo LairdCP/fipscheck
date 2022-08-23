@@ -41,6 +41,7 @@
 #include <sys/wait.h>
 
 #if defined(WITH_OPENSSL)
+#include <openssl/opensslv.h>
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
 #include <openssl/provider.h>
 #include <openssl/evp.h>
@@ -215,7 +216,7 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 	size_t len;
 	unsigned int hlen;
 
-	if (force_fips && fips != NULL) {
+	if (force_fips && fips == NULL) {
 		fips = OSSL_PROVIDER_load(NULL, "fips");
 		if (fips == NULL) {
 			debug_log("Failed to load FIPS provider\n");
