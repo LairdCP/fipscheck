@@ -214,7 +214,7 @@ compute_file_hmac(const char *path, void **buf, size_t *hmaclen, int force_fips)
 	OSSL_PARAM params[2];
 	unsigned char rbuf[READ_BUFFER_LENGTH];
 	size_t len;
-	unsigned int hlen;
+	size_t hlen;
 
 	if (force_fips && fips == NULL) {
 		fips = OSSL_PROVIDER_load(NULL, "fips");
